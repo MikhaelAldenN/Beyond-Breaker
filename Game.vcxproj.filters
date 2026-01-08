@@ -37,11 +37,17 @@
     <Filter Include="Source\Camera">
       <UniqueIdentifier>{36533bc8-3246-4c43-8c5e-8181df46a87c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\Framework">
+      <UniqueIdentifier>{02a7d85f-2820-4fad-9129-96b17f81aa12}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Scene">
+      <UniqueIdentifier>{0e72b97b-d950-413c-a620-512251120652}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Window">
+      <UniqueIdentifier>{a2280a9e-1837-4e7e-a9e0-c8f44d613499}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Source\Framework.h">
-      <Filter>Source</Filter>
-    </ClInclude>
     <ClInclude Include="External\imgui-docking\imconfig.h">
       <Filter>External\imgui-docking</Filter>
     </ClInclude>
@@ -65,9 +71,6 @@
     </ClInclude>
     <ClInclude Include="External\imgui-docking\imstb_truetype.h">
       <Filter>External\imgui-docking</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\FreeCameraController.h">
-      <Filter>Source</Filter>
     </ClInclude>
     <ClInclude Include="External\ImGuizmo\ImCurveEdit.h">
       <Filter>External\ImGuizmo</Filter>
@@ -153,12 +156,6 @@
     <ClInclude Include="Source\System\Mouse.h">
       <Filter>System</Filter>
     </ClInclude>
-    <ClInclude Include="Source\SceneGame.h">
-      <Filter>Source</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Scene.h">
-      <Filter>Source</Filter>
-    </ClInclude>
     <ClInclude Include="Source\Character.h">
       <Filter>Source\Character</Filter>
     </ClInclude>
@@ -189,20 +186,29 @@
     <ClInclude Include="Source\CameraController.h">
       <Filter>Source\Camera</Filter>
     </ClInclude>
-    <ClInclude Include="Source\GameWindow.h">
-      <Filter>Source</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\WindowManager.h">
-      <Filter>Source</Filter>
-    </ClInclude>
     <ClInclude Include="Source\System\Keyboard.h">
       <Filter>System</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Framework.h">
+      <Filter>Source\Framework</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\SceneGame.h">
+      <Filter>Source\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Scene.h">
+      <Filter>Source\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\GameWindow.h">
+      <Filter>Source\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\WindowManager.h">
+      <Filter>Source\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\FreeCameraController.h">
+      <Filter>Source\Camera</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Source\Framework.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
     <ClCompile Include="External\imgui-docking\imgui.cpp">
       <Filter>External\imgui-docking</Filter>
     </ClCompile>
@@ -220,9 +226,6 @@
     </ClCompile>
     <ClCompile Include="External\imgui-docking\imgui_widgets.cpp">
       <Filter>External\imgui-docking</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\FreeCameraController.cpp">
-      <Filter>Source</Filter>
     </ClCompile>
     <ClCompile Include="External\ImGuizmo\ImCurveEdit.cpp">
       <Filter>External\ImGuizmo</Filter>
@@ -290,12 +293,6 @@
     <ClCompile Include="Source\System\Mouse.cpp">
       <Filter>System</Filter>
     </ClCompile>
-    <ClCompile Include="Source\SceneGame.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Main.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
     <ClCompile Include="Source\Character.cpp">
       <Filter>Source\Character</Filter>
     </ClCompile>
@@ -317,14 +314,26 @@
     <ClCompile Include="Source\CameraController.cpp">
       <Filter>Source\Camera</Filter>
     </ClCompile>
-    <ClCompile Include="Source\GameWindow.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\WindowManager.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
     <ClCompile Include="Source\System\Keyboard.cpp">
       <Filter>System</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Framework.cpp">
+      <Filter>Source\Framework</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Main.cpp">
+      <Filter>Source\Framework</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SceneGame.cpp">
+      <Filter>Source\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\GameWindow.cpp">
+      <Filter>Source\Window</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\WindowManager.cpp">
+      <Filter>Source\Window</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\FreeCameraController.cpp">
+      <Filter>Source\Camera</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
