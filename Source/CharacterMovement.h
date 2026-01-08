@@ -1,0 +1,39 @@
+#pragma once
+#include <DirectXMath.h>
+
+class CharacterMovement
+{
+public:
+    CharacterMovement();
+    ~CharacterMovement() = default;
+
+    // Physics update loop
+    void Update(float elapsedTime);
+
+    // Input handling (Range: -1.0 to 1.0)
+    void SetMoveInput(float x, float z);
+    void Jump();
+
+    // Getters & Setters
+    const DirectX::XMFLOAT3& GetPosition() const { return position; }
+    void SetPosition(const DirectX::XMFLOAT3& pos) { position = pos; }
+
+    float GetRotationY() const { return rotationY; }
+    const DirectX::XMFLOAT3& GetVelocity() const { return velocity; }
+
+    // Status checks
+    bool IsGrounded() const { return isGrounded; }
+    bool IsMoving() const;
+
+private:
+    // Physics State
+    DirectX::XMFLOAT3 position = { 0, 0, 0 };
+    DirectX::XMFLOAT3 velocity = { 0, 0, 0 };
+    float rotationY = 0.0f;
+
+    // Parameters
+    float moveSpeed = 5.0f;
+    float jumpForce = 8.0f;
+    float gravity = -20.0f;
+    bool isGrounded = false;
+};

@@ -39,3 +39,16 @@
 
 # debug information files
 *.dwo
+
+# Folder internal Visual Studio
+.vs/
+[Bb]in/
+[Oo]bj/
+out/
+
+# File hasil build dan log
+*.user
+*.suo
+*.db
+*.opendb
+*.log
