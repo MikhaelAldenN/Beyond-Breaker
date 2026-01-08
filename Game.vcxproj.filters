@@ -210,6 +210,9 @@
     <ClInclude Include="Source\SceneTitle.h">
       <Filter>Source\Scene</Filter>
     </ClInclude>
+    <ClInclude Include="Source\SceneIntro.h">
+      <Filter>Source\Scene</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="External\imgui-docking\imgui.cpp">
@@ -339,6 +342,9 @@
       <Filter>Source\Camera</Filter>
     </ClCompile>
     <ClCompile Include="Source\SceneTitle.cpp">
+      <Filter>Source\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SceneIntro.cpp">
       <Filter>Source\Scene</Filter>
     </ClCompile>
   </ItemGroup>

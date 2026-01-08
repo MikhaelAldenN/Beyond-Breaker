@@ -10,6 +10,7 @@
 #include "WindowManager.h"
 #include "SceneGame.h"
 #include "SceneTitle.h"
+#include "SceneIntro.h"
 
 Framework* Framework::pInstance = nullptr;
 
@@ -24,12 +25,12 @@ Framework::Framework()
     ImGuiRenderer::Initialize(mainWindow->GetHWND(), Graphics::Instance().GetDevice(), Graphics::Instance().GetDeviceContext());
 
     // 1. Inisialisasi scene awal menjadi SceneTitle (bukan SceneGame)
-    scene = std::make_unique<SceneTitle>();
+    scene = std::make_unique<SceneIntro>();
 
     // 2. Set kamera awal berdasarkan SceneTitle
-    if (auto titleScene = dynamic_cast<SceneTitle*>(scene.get()))
+    if (auto introScene = dynamic_cast<SceneIntro*>(scene.get()))
     {
-        mainWindow->SetCamera(titleScene->GetCamera());
+        mainWindow->SetCamera(introScene->GetCamera());
     }
 }
 
