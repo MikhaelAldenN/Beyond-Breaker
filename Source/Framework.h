@@ -20,6 +20,7 @@ public:
     void Update(float elapsedTime);
     void Render(float elapsedTime);
     void ForceUpdateRender(); // Handling for blocking operations (e.g. Resize/Drag)
+    void ChangeScene(std::unique_ptr<Scene> newScene);
 
     // --- Message Handling ---
     LRESULT CALLBACK HandleMessage(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -33,4 +34,5 @@ private:
     HighResolutionTimer timer;
     std::unique_ptr<GameWindow> mainWindow;
     std::unique_ptr<Scene> scene;
+    std::unique_ptr<Scene> nextScene;
 };

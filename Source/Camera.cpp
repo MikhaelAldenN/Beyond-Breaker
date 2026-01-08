@@ -114,6 +114,15 @@ void Camera::SetOffCenterProjection(float left, float right, float bottom, float
     XMStoreFloat4x4(&projection, matProj);
 }
 
+void Camera::SetOrthographic(float viewWidth, float viewHeight, float nearZ, float farZ)
+{
+    this->nearZ = nearZ;
+    this->farZ = farZ;
+    // Membuat matriks proyeksi ortografis (kotak, bukan piramida)
+    XMMATRIX matProj = XMMatrixOrthographicLH(viewWidth, viewHeight, nearZ, farZ);
+    XMStoreFloat4x4(&projection, matProj);
+}
+
 // --- Helpers & Internals ---
 
 DirectX::XMFLOAT3 Camera::GetFocus() const

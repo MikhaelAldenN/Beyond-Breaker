@@ -6,9 +6,10 @@
 #include "Framework.h"
 #include "System/Graphics.h"
 #include "System/ImGuiRenderer.h"
-#include "SceneGame.h"
 #include "System/Input.h"
 #include "WindowManager.h"
+#include "SceneGame.h"
+#include "SceneTitle.h"
 
 Framework* Framework::pInstance = nullptr;
 
@@ -22,11 +23,13 @@ Framework::Framework()
     Input::Instance().Initialize(mainWindow->GetHWND());
     ImGuiRenderer::Initialize(mainWindow->GetHWND(), Graphics::Instance().GetDevice(), Graphics::Instance().GetDeviceContext());
 
-    scene = std::make_unique<SceneGame>();
+    // 1. Inisialisasi scene awal menjadi SceneTitle (bukan SceneGame)
+    scene = std::make_unique<SceneTitle>();
 
-    if (auto gameScene = dynamic_cast<SceneGame*>(scene.get()))
+    // 2. Set kamera awal berdasarkan SceneTitle
+    if (auto titleScene = dynamic_cast<SceneTitle*>(scene.get()))
     {
-        mainWindow->SetCamera(gameScene->GetMainCamera());
+        mainWindow->SetCamera(titleScene->GetCamera());
     }
 }
 
@@ -43,8 +46,32 @@ Framework* Framework::Instance()
     return pInstance;
 }
 
+void Framework::ChangeScene(std::unique_ptr<Scene> newScene)
+{
+    nextScene = std::move(newScene);
+}
+
 void Framework::Update(float elapsedTime)
 {
+    // [BARU] Cek apakah ada request ganti scene?
+    if (nextScene)
+    {
+        // std::move akan otomatis men-delete scene lama dan memindahkan ownership scene baru
+        scene = std::move(nextScene);
+
+        // Reset logika kamera jika diperlukan (tergantung scene baru)
+        if (auto gameScene = dynamic_cast<SceneGame*>(scene.get()))
+        {
+            mainWindow->SetCamera(gameScene->GetMainCamera());
+        }
+        // Jika Title scene punya kamera sendiri, kita bisa set di sini atau biarkan default
+        else if (auto titleScene = dynamic_cast<SceneTitle*>(scene.get()))
+        {
+            // Opsional: Set kamera title ke window utama jika perlu
+            mainWindow->SetCamera(titleScene->GetCamera());
+        }
+    }
+
     CalculateFrameStats(elapsedTime);
     Input::Instance().Update();
     ImGuiRenderer::NewFrame();

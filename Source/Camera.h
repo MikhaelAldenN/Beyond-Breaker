@@ -24,6 +24,7 @@ public:
     void SetPerspectiveFov(float fovY, float aspect, float nearZ, float farZ);
     void SetAspectRatio(float aspect);
     void SetOffCenterProjection(float left, float right, float bottom, float top, float nearZ, float farZ);
+    void SetOrthographic(float viewWidth, float viewHeight, float nearZ, float farZ);
 
     // --- Accessors ---
     const DirectX::XMFLOAT3& GetPosition() const { return position; }
