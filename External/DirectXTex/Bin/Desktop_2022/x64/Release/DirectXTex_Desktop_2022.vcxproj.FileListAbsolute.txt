@@ -1,0 +1,1 @@
+C:\Users\2240763\Desktop\ゲームプログラミングⅤ\ゲームプログラミングⅤ（学生配布）\ゲームプログラミングⅤ（学生配布）\External\DirectXTex\Bin\Desktop_2022\x64\Release\DirectXTex.lib

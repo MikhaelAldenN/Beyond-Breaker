@@ -20,7 +20,6 @@
 # Compiled Dynamic libraries
 *.so
 *.dylib
-*.dll
 
 # Fortran module files
 *.mod
@@ -42,8 +41,6 @@
 
 # Folder internal Visual Studio
 .vs/
-[Bb]in/
-[Oo]bj/
 out/
 
 # File hasil build dan log
