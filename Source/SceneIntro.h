@@ -4,6 +4,7 @@
 #include "Scene.h"
 #include "Camera.h"
 #include "System/Sprite.h" 
+#include "BitmapFont.h"
 
 class SceneIntro : public Scene
 {
@@ -20,7 +21,8 @@ public:
 
 private:
     std::unique_ptr<Camera> camera;
-
+    std::unique_ptr<BitmapFont> biosFont;
+    Microsoft::WRL::ComPtr<ID3D11BlendState> blendState;
     // Vars here
     // float bootTimer = 0.0f;
 };
