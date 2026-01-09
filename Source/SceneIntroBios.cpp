@@ -71,7 +71,7 @@ SceneIntroBios::SceneIntroBios()
         "Memory Test : ",
         0,
         262144,
-        3.0f,              // <--- Parameter DURASI (Detik)
+        2.0f,              // <--- Parameter DURASI (Detik)
         "KB OK",
         740.0f, 175.74f + 23.5f,
         fSize,
@@ -89,12 +89,9 @@ SceneIntroBios::SceneIntroBios()
         298.0f, 296.79f, fSize, yellow
     );
 
-    biosLogSystem->AddLine("IDE Primary Master    ... [ST320411A]", 334.7f, 344.31f, fSize, yellow);
+    biosLogSystem->AddLine("IDE Primary Master    ... [ST320411A]", 334.7f, 344.31f, fSize, yellow, 1.0f);
     biosLogSystem->AddLine("IDE Primary Slave     ... NONE", 334.7f, 368.5f, fSize, yellow);
-    biosLogSystem->AddLine("IDE Secondary Master  ... [ECC DVD-ROM]", 334.7f, 392.5f, fSize, yellow);
-
-    // Contoh beda warna
-    biosLogSystem->AddLine("IDE Secondary Slave   ... [!] WARNING: ANOMALY_DETECTED", 334.7f, 416.5f, fSize, yellow);
+    biosLogSystem->AddLine("IDE Secondary Master  ... [ECC DVD-ROM]\nIDE Secondary Slave   ... [!] WARNING: ANOMALY_DETECTED", 334.7f, 392.5f, fSize, yellow);
 
     biosLogSystem->AddLine(
         "[CRITICAL ALERT] Sector 0x004 is bleeding.\nThe blocks are no longer static. The Wall is thinner than you think.",

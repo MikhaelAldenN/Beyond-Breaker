@@ -3,6 +3,7 @@
 #include "Camera.h"
 #include "System/Sprite.h" 
 #include <memory>
+#include "Primitive.h"
 
 class SceneIntroOS : public Scene
 {
@@ -17,6 +18,7 @@ public:
 private:
     std::unique_ptr<Camera> camera;
     std::unique_ptr<Sprite> spriteOSLogo; // Logo OS Besarnya
+    std::unique_ptr<Primitive> primitiveBatch;
 
     float timer = 0.0f;
     const float LOADING_DURATION = 5.0f; // Logo muncul selama 3 detik

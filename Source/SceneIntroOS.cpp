@@ -15,6 +15,8 @@ SceneIntroOS::SceneIntroOS()
         Graphics::Instance().GetDevice(),
         "Data/Sprite/Scene Intro/Sprite_KuterOS.png" // Pastikan file ini ada
     );
+
+    primitiveBatch = std::make_unique<Primitive>(Graphics::Instance().GetDevice());
 }
 
 void SceneIntroOS::Update(float elapsedTime)
@@ -42,20 +44,39 @@ void SceneIntroOS::Render(float dt, Camera* targetCamera)
 {
     auto dc = Graphics::Instance().GetDeviceContext();
 
-    // Render Logo di tengah layar
-    if (spriteOSLogo && isVisible)
+    if (primitiveBatch)
     {
-        // Asumsi posisi tengah (Center of screen 1280x720 is 640, 360)
-        // Sesuaikan ukuran W dan H dengan ukuran asli gambarmu
-        spriteOSLogo->Render(
-            dc,
-            0, 0,
-            0.0f,
-            1920, 1080,         // Ukuran Gambar
-            0.0f,
-            1.0f, 1.0f, 1.0f, 1.0f
+        // Warna Kuning BRICK-DOS
+        float r = 245.0f / 255.0f;
+        float g = 204.0f / 255.0f;
+        float b = 59.0f / 255.0f;
+
+        // UKURAN BARU: 1312 x 984 di Tengah Layar (304, 48)
+        primitiveBatch->Rect(
+            304.0f, 48.0f,    // Posisi X, Y (Kiri Atas)
+            1312.0f, 984.0f,  // Ukuran Lebar, Tinggi
+            0.0f, 0.0f,       // Pivot Center
+            0.0f,             // Rotasi
+            r, g, b, 1.0f     // Warna
         );
+
+        primitiveBatch->Render(dc);
     }
+
+    // Render Logo di tengah layar
+    //if (spriteOSLogo && isVisible)
+    //{
+    //    // Asumsi posisi tengah (Center of screen 1280x720 is 640, 360)
+    //    // Sesuaikan ukuran W dan H dengan ukuran asli gambarmu
+    //    spriteOSLogo->Render(
+    //        dc,
+    //        0, 0,
+    //        0.0f,
+    //        1920, 1080,         // Ukuran Gambar
+    //        0.0f,
+    //        1.0f, 1.0f, 1.0f, 1.0f
+    //    );
+    //}
 }
 
 void SceneIntroOS::OnResize(int width, int height)

@@ -3,18 +3,23 @@
 
 Typewriter::Typewriter() {}
 
-void Typewriter::AddLine(const std::string& text, float x, float y, float size, const float color[4])
+// Update parameter
+void Typewriter::AddLine(const std::string& text, float x, float y, float size, const float color[4], float delay)
 {
     TypewriterLine line;
     line.text = text;
     line.x = x; line.y = y; line.fontSize = size;
     for (int i = 0; i < 4; i++) line.color[i] = color[i];
-    line.isMemoryTest = false; // Baris biasa
+    line.isMemoryTest = false;
+
+    // Simpan delay custom
+    line.postLineDelay = delay;
+
     lines.push_back(line);
 }
 
-// Perhatikan ada parameter baru: float duration
-void Typewriter::AddMemoryTestLine(const std::string& prefix, int startVal, int endVal, float duration, const std::string& suffix, float x, float y, float size, const float color[4])
+// Update parameter
+void Typewriter::AddMemoryTestLine(const std::string& prefix, int startVal, int endVal, float duration, const std::string& suffix, float x, float y, float size, const float color[4], float delay)
 {
     TypewriterLine line;
     line.text = prefix;
@@ -26,17 +31,17 @@ void Typewriter::AddMemoryTestLine(const std::string& prefix, int startVal, int 
     line.memEnd = endVal;
     line.memCurrent = startVal;
     line.memSuffix = suffix;
+    line.memCurrentFloat = (float)startVal;
 
-    // --- LOGIC BARU ---
-    line.memCurrentFloat = (float)startVal; // Set float awal
-
-    // Rumus: Kecepatan = Jarak / Waktu
     if (duration > 0.0f) {
         line.memIncrementPerSecond = (float)(endVal - startVal) / duration;
     }
     else {
-        line.memIncrementPerSecond = (float)(endVal - startVal); // Langsung selesai kalau 0
+        line.memIncrementPerSecond = (float)(endVal - startVal);
     }
+
+    // Simpan delay custom
+    line.postLineDelay = delay;
 
     lines.push_back(line);
 }
@@ -47,13 +52,13 @@ bool Typewriter::Update(float dt)
     bool charTyped = false;
     TypewriterLine& currentLine = lines[currentLineIndex];
 
-    // FASE 1: Ngetik Teks Biasa (Prefix)
+    // FASE 1: Ngetik Teks Biasa
     if (currentCharIndex < currentLine.text.size())
     {
         timer += dt;
         while (timer >= typeSpeed)
         {
-            if (typeSpeed <= 0.0f) { /* Safety */ break; }
+            if (typeSpeed <= 0.0f) { break; }
             timer -= typeSpeed;
             currentCharIndex++;
             charTyped = true;
@@ -63,30 +68,23 @@ bool Typewriter::Update(float dt)
             }
         }
     }
-
     // FASE 2: Memory Test Counting
     else if (currentLine.isMemoryTest && currentLine.memCurrent < currentLine.memEnd)
     {
-        // Tambahkan angka berdasarkan waktu (dt)
-        // Ini menjamin durasinya pas, mau 60 FPS atau 144 FPS
         currentLine.memCurrentFloat += currentLine.memIncrementPerSecond * dt;
-
-        // Update tampilan angka (cast ke int)
         currentLine.memCurrent = (int)currentLine.memCurrentFloat;
-
-        // Cap biar nggak kelebihan
         if (currentLine.memCurrent >= currentLine.memEnd) {
             currentLine.memCurrent = currentLine.memEnd;
         }
-
-        charTyped = true; // Tetap return true biar ada suara SFX 'trrrrt'
+        charTyped = true;
     }
-
-    // FASE 3: Selesai / Delay pindah baris
+    // FASE 3: Delay Pindah Baris (CUSTOM DELAY LOGIC)
     else
     {
         lineDelayTimer += dt;
-        if (lineDelayTimer >= LINE_DELAY_DURATION)
+
+        // Cek timer melawan delay KHUSUS milik baris ini
+        if (lineDelayTimer >= currentLine.postLineDelay)
         {
             lineDelayTimer = 0.0f;
             currentLineIndex++;
