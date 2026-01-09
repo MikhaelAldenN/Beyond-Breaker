@@ -17,6 +17,12 @@ SceneIntro::SceneIntro()
         "Data/Font/IBM_VGA_32px.fnt"
     );
 
+    bgSpriteIntro = std::make_unique<Sprite>(
+        Graphics::Instance().GetDevice(),
+        "Data/Sprite/Placeholder/[PLACEHOLDER]Back_Boot.png"
+    );
+
+
     // --- 1. BUAT BLEND STATE (Hanya sekali di awal) ---
     D3D11_BLEND_DESC blendDesc = {};
     blendDesc.AlphaToCoverageEnable = FALSE;
@@ -47,12 +53,32 @@ void SceneIntro::Update(float elapsedTime)
 
 void SceneIntro::Render(float dt, Camera* targetCamera)
 {
-    auto context = Graphics::Instance().GetDeviceContext();
+    auto dc = Graphics::Instance().GetDeviceContext();
 
     // --- 2. AKTIFKAN BLEND STATE SEBELUM GAMBAR FONT ---
         // Parameter: (BlendState, BlendFactor, SampleMask)
     float blendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-    context->OMSetBlendState(blendState.Get(), blendFactor, 0xFFFFFFFF);
+    dc->OMSetBlendState(blendState.Get(), blendFactor, 0xFFFFFFFF);
+
+
+    // PERBAIKAN: Ambil ukuran layar dari Framework -> MainWindow
+    float sw = 1280.0f;
+    float sh = 720.0f;
+
+        // Render Sprite
+    if (bgSpriteIntro)
+    {
+        // PERBAIKAN: Sesuaikan argumen dengan Sprite.h yang kamu upload
+        // Render(dc, x, y, z, w, h, angle, r, g, b, a)
+        bgSpriteIntro->Render(
+            dc,             // Device Context
+            0, 0,           // Posisi X, Y (Kiri Atas)
+            0.5f,              // Posisi Z (Depth)
+            sw, sh,         // Lebar & Tinggi (Fullscreen)
+            0.0f,           // Rotasi (Angle)
+            1.0f, 1.0f, 1.0f, 1.0f // Warna (Putih/Normal)
+        );
+    }
 
     if (biosFont)
     {
@@ -60,7 +86,7 @@ void SceneIntro::Render(float dt, Camera* targetCamera)
         biosFont->Draw("SYSTEM BOOT...", 50, 50, 1.0f);
 
         // Tes warna warni
-        biosFont->Draw("ENERGY STAR", 800, 50, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f); // Kuning
+        biosFont->Draw("BABI ANJAYY", 800, 50, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f); // Kuning
     }
 
 }
