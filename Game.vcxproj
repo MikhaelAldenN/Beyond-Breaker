@@ -136,6 +136,7 @@
     <ClInclude Include="Source\Framework.h" />
     <ClInclude Include="Source\FreeCameraController.h" />
     <ClInclude Include="Source\GameWindow.h" />
+    <ClInclude Include="Source\Paddle.h" />
     <ClInclude Include="Source\Player.h" />
     <ClInclude Include="Source\PlayerState.h" />
     <ClInclude Include="Source\PlayerStates.h" />
@@ -193,6 +194,7 @@
     <ClCompile Include="Source\FreeCameraController.cpp" />
     <ClCompile Include="Source\GameWindow.cpp" />
     <ClCompile Include="Source\Main.cpp" />
+    <ClCompile Include="Source\Paddle.cpp" />
     <ClCompile Include="Source\Player.cpp" />
     <ClCompile Include="Source\SceneGameBeyond.cpp" />
     <ClCompile Include="Source\SceneGameBreaker.cpp" />

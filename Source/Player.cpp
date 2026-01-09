@@ -14,7 +14,7 @@ Player::Player()
 {
     // 1. Init Model
     ID3D11Device* device = Graphics::Instance().GetDevice();
-    model = std::make_shared<Model>(device, "Data/Model/Character/PLACEHOLDER_mdl_Paddle.glb");
+    model = std::make_shared<Model>(device, "Data/Model/Character/PLACEHOLDER_mdl_Block.glb");
 
     // 2. Init Animation Controller
     animator = new AnimationController();
