@@ -56,12 +56,12 @@ SceneIntroBios::SceneIntroBios()
 
     // Masukkan data text yang tadi ada di Render
     biosLogSystem->AddLine(
-        "BEYOND BREAKER - SYSTEM BOOT LOG \n\nBEYOND Modular BIOS v9.70BB, An Energy Star Ally \nCopyright (C) 1987-2026, Beyond Breaker Software, Inc. ",
+        "SURAKARTAN - SYSTEM BOOT LOG \n\nBEYOND Modular BIOS v9.70BB, An Energy Star Ally \nCopyright (C) 1987-2026, Software Chaos, Inc. ",
         406.5f, 57.4f, fSize, yellow
     );
 
     biosLogSystem->AddLine(
-        "Version BB-4TH-WALL\nNEURAL-LINK CPU at 444MHz",
+        "Version YN7K75\nNEURAL-LINK CPU at 444MHz",
         298.0f, 175.74f, fSize, yellow
     );
 
@@ -85,16 +85,16 @@ SceneIntroBios::SceneIntroBios()
     );
 
     biosLogSystem->AddLine(
-        "Beyond Plug and Play BIOS Extension v1.0A\nCopyright (C) 2026, Beyond Breaker Software, Inc.",
+        "Chaos Plug and Play BIOS Extension v1.0A\nCopyright (C) 2026, Software Chaos, Inc.",
         298.0f, 296.79f, fSize, yellow
     );
 
-    biosLogSystem->AddLine("Detecting Primary Master    ... BEYOND_OS_HD", 334.7f, 344.31f, fSize, yellow);
-    biosLogSystem->AddLine("Detecting Primary Slave     ... NONE", 334.7f, 368.5f, fSize, yellow);
-    biosLogSystem->AddLine("Detecting Secondary Master  ... BLOCK_DATABASE", 334.7f, 392.5f, fSize, yellow);
+    biosLogSystem->AddLine("IDE Primary Master    ... [ST320411A]", 334.7f, 344.31f, fSize, yellow);
+    biosLogSystem->AddLine("IDE Primary Slave     ... NONE", 334.7f, 368.5f, fSize, yellow);
+    biosLogSystem->AddLine("IDE Secondary Master  ... [ECC DVD-ROM]", 334.7f, 392.5f, fSize, yellow);
 
     // Contoh beda warna
-    biosLogSystem->AddLine("Detecting Secondary Slave   ... [!] WARNING: ANOMALY_DETECTED", 334.7f, 416.5f, fSize, yellow);
+    biosLogSystem->AddLine("IDE Secondary Slave   ... [!] WARNING: ANOMALY_DETECTED", 334.7f, 416.5f, fSize, yellow);
 
     biosLogSystem->AddLine(
         "[CRITICAL ALERT] Sector 0x004 is bleeding.\nThe blocks are no longer static. The Wall is thinner than you think.",
@@ -109,47 +109,51 @@ SceneIntroBios::SceneIntroBios()
 
 void SceneIntroBios::Update(float elapsedTime)
 {
-    // 1. Jika sedang fase Black Screen (Exiting)
+    // 1. Jika sedang fase Black Screen (Exiting) -> Jalankan logika layar mati
     if (isExiting)
     {
         exitTimer += elapsedTime;
         if (exitTimer >= EXIT_DELAY)
         {
-            // Waktu habis, pindah ke OS Scene
             Framework::Instance()->ChangeScene(std::make_unique<SceneIntroOS>());
         }
-        return; // Stop update logic lainnya
+        return;
     }
 
-    // 2. Logic Normal (BIOS Text berjalan)
+    // 2. Logic Normal & Auto Transition
     if (biosLogSystem)
     {
         biosLogSystem->Update(elapsedTime);
+
+        // LOGIC BARU: Cek apakah semua teks sudah selesai diketik?
+        if (biosLogSystem->IsFinished())
+        {
+            // Mulai hitung mundur 0.5 detik
+            finishDelayTimer += elapsedTime;
+
+            if (finishDelayTimer >= FINISH_DELAY)
+            {
+                // Setelah 0.5 detik berlalu, baru masuk fase black screen
+                isExiting = true;
+            }
+        }
     }
 
-    // 3. Logic Input (Enter) atau Auto-Finish
-    // Cek apakah user tekan Enter
+    // 3. Logic Input (Override manual)
     if (Input::Instance().GetKeyboard().IsTriggered(VK_RETURN))
     {
-        // Jika teks BIOS belum selesai -> Percepat/Skip Text
         if (biosLogSystem && !biosLogSystem->IsFinished())
         {
+            // Kalau belum selesai ngetik -> Percepat (Skip)
             biosLogSystem->SkipCurrentLine();
         }
-        // Jika teks SUDAH selesai -> Masuk fase Black Screen
         else
         {
+            // Kalau sudah selesai ngetik dan user TIDAK SABAR nunggu 0.5 detik
+            // Tekan Enter lagi untuk langsung masuk black screen
             isExiting = true;
         }
     }
-
-    // Opsi Tambahan: Kalau teks sudah selesai sendiri tanpa ditekan Enter
-    // Tambahkan delay dikit biar gak kaget, lalu masuk black screen
-    /*
-    if (biosLogSystem && biosLogSystem->IsFinished()) {
-        // logic auto exit disini
-    }
-    */
 }
 
 void SceneIntroBios::Render(float dt, Camera* targetCamera)

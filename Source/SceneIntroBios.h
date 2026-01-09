@@ -40,4 +40,8 @@ private:
     bool isExiting = false;      // Apakah kita sedang di fase layar hitam?
     float exitTimer = 0.0f;      // Timer penghitung durasi layar hitam
     const float EXIT_DELAY = 1.5f; // Lama layar hitam (detik)
+
+    // BARU: Timer jeda setelah teks selesai sebelum masuk black screen
+    float finishDelayTimer = 0.0f;
+    const float FINISH_DELAY = 0.5f; // Durasi jeda 0.5 detik
 };
