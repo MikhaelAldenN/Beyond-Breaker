@@ -86,7 +86,7 @@ void SceneIntro::Render(float dt, Camera* targetCamera)
         biosFont->Draw("SYSTEM BOOT...", 50, 50, 1.0f);
 
         // Tes warna warni
-        biosFont->Draw("BABI ANJAYY", 800, 50, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f); // Kuning
+        biosFont->Draw("TAHUN BARU DI RUMAH SAJA", 800, 50, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f); // Kuning
     }
 
 }
