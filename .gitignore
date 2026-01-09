@@ -38,6 +38,9 @@
 # debug information files
 *.dwo
 
+# Shader Compiled Objects
+*.cso
+
 # Folder internal Visual Studio
 .vs/
 out/
@@ -49,3 +52,5 @@ out/
 *.opendb
 *.log
 *.tlog
+*.lastbuildstate
+*.recipe
