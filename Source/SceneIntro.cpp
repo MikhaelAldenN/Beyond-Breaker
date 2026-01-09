@@ -44,10 +44,76 @@ SceneIntro::SceneIntro()
 
     auto device = Graphics::Instance().GetDevice();
     HRESULT hr = device->CreateBlendState(&blendDesc, blendState.GetAddressOf());
+
+    // --- SETUP TYPEWRITER ---
+    biosLogSystem = std::make_unique<Typewriter>();
+
+    // Definisikan warna & ukuran font di sini biar rapi
+    float fSize = 0.625f;
+    float yellow[4] = { 0.96f, 0.80f, 0.23f, 1.0f };
+    float red[4] = { 1.0f, 0.2f, 0.2f, 1.0f }; // Untuk error/warning
+
+    // Masukkan data text yang tadi ada di Render
+    biosLogSystem->AddLine(
+        "BEYOND BREAKER - SYSTEM BOOT LOG \n\nBEYOND Modular BIOS v9.70BB, An Energy Star Ally \nCopyright (C) 1987-2026, Beyond Breaker Software, Inc. ",
+        406.5f, 57.4f, fSize, yellow
+    );
+
+    biosLogSystem->AddLine(
+        "Version BB-4TH-WALL\nNEURAL-LINK CPU at 444MHz",
+        298.0f, 175.74f, fSize, yellow
+    );
+
+    // INI DIA BINTANG UTAMANYA:
+    // AddMemoryTestLine(Prefix, Start, End, Suffix, X, Y, Size, Color)
+    biosLogSystem->AddMemoryTestLine(
+        "Memory Test : ",
+        0,
+        262144,
+        3.0f,              // <--- Parameter DURASI (Detik)
+        "KB OK",
+        740.0f, 175.74f + 23.5f,
+        fSize,
+        yellow
+    );
+
+    // Lanjut baris berikutnya
+    biosLogSystem->AddLine(
+        "(Reference: \"640K ought to be enough for anybody\")",
+        298.0f, 235.0f, fSize, yellow // Sesuaikan Y lagi
+    );
+
+    biosLogSystem->AddLine(
+        "Beyond Plug and Play BIOS Extension v1.0A\nCopyright (C) 2026, Beyond Breaker Software, Inc.",
+        298.0f, 296.79f, fSize, yellow
+    );
+
+    biosLogSystem->AddLine("Detecting Primary Master    ... BEYOND_OS_HD", 334.7f, 344.31f, fSize, yellow);
+    biosLogSystem->AddLine("Detecting Primary Slave     ... NONE", 334.7f, 368.5f, fSize, yellow);
+    biosLogSystem->AddLine("Detecting Secondary Master  ... BLOCK_DATABASE", 334.7f, 392.5f, fSize, yellow);
+
+    // Contoh beda warna
+    biosLogSystem->AddLine("Detecting Secondary Slave   ... [!] WARNING: ANOMALY_DETECTED", 334.7f, 416.5f, fSize, yellow);
+
+    biosLogSystem->AddLine(
+        "[CRITICAL ALERT] Sector 0x004 is bleeding.\nThe blocks are no longer static. The Wall is thinner than you think.",
+        298.7f, 560.0f, fSize, yellow // Pakai warna MERAH
+    );
+
+    biosLogSystem->AddLine(
+        "Press DEL to enter SETUP Press F1 to ESCAPE THE GRID\n09/01/2026-BB-586B-W877-2A5LEF09C-00",
+        298.7f, 973.5f, fSize, yellow
+    );
 }
 
 void SceneIntro::Update(float elapsedTime)
 {
+    // Update Typewriter (return true kalau ada huruf baru, bisa buat play sound)
+    if (biosLogSystem)
+    {
+        biosLogSystem->Update(elapsedTime);
+    }
+
     // SEMENTARA: Tekan Enter untuk lanjut ke Title
     if (Input::Instance().GetKeyboard().IsTriggered(VK_RETURN))
     {
@@ -96,65 +162,72 @@ void SceneIntro::Render(float dt, Camera* targetCamera)
 		);
     }
 
-    if (biosFont)
+    //if (biosFont)
+    //{
+    //    // Note: REFACTOR THIS LATER!!
+    //    float fontSize = 0.625f;
+    //    float fontColor[4] = { 0.96f, 0.80f, 0.23f, 1.0f };
+
+
+    //    biosFont->Draw("BEYOND BREAKER - SYSTEM BOOT LOG \n\nBEYOND Modular BIOS v9.70BB, An Energy Star Ally \nCopyright (C) 1987-2026, Beyond Breaker Software, Inc. ",
+    //        406.5f, 57.4f,
+    //        fontSize,
+    //        fontColor[0], fontColor[1], fontColor[2], fontColor[3]);
+
+    //    biosFont->Draw("Version BB-4TH-WALL\n\nNEURAL-LINK CPU at 444MHz Memory Test : 640K OK\n(Reference: \"640K ought to be enough for anybody\")",
+    //        298.0f, 175.74f,
+    //        fontSize,
+    //        fontColor[0], fontColor[1], fontColor[2], fontColor[3]);
+
+    //    biosFont->Draw("Beyond Plug and Play BIOS Extension v1.0A\nCopyright (C) 2026, Beyond Breaker Software, Inc.",
+    //        298.0f, 296.79f,
+    //        fontSize,
+    //        fontColor[0], fontColor[1], fontColor[2], fontColor[3]);
+
+    //    biosFont->Draw("Detecting Primary Master    ... BEYOND_OS_HD",
+    //        334.7f, 344.31f,
+    //        fontSize,
+    //        fontColor[0], fontColor[1], fontColor[2], fontColor[3]);
+
+    //    biosFont->Draw("Detecting Primary Slave     ... NONE",
+    //        334.7f, 368.5f,
+    //        fontSize,
+    //        fontColor[0], fontColor[1], fontColor[2], fontColor[3]);
+
+    //    biosFont->Draw("Detecting Secondary Master  ... BLOCK_DATABASE",
+    //        334.7f, 392.5f,
+    //        fontSize,
+    //        fontColor[0], fontColor[1], fontColor[2], fontColor[3]);
+
+    //    biosFont->Draw("Detecting Secondary Slave   ... [!] WARNING: ANOMALY_DETECTED",
+    //        334.7f, 416.5f,
+    //        fontSize,
+    //        fontColor[0], fontColor[1], fontColor[2], fontColor[3]);
+
+    //    biosFont->Draw("[CRITICAL ALERT] Sector 0x004 is bleeding.\nThe blocks are no longer static. The Wall is thinner than you think.",
+    //        298.7f, 560.0f,
+    //        fontSize,
+    //        fontColor[0], fontColor[1], fontColor[2], fontColor[3]);
+
+    //    biosFont->Draw("Press DEL to enter SETUP Press F1 to ESCAPE THE GRID\n09/01/2026-BB-586B-W877-2A5LEF09C-00",
+    //        298.7f, 973.5f,
+    //        fontSize,
+    //        fontColor[0], fontColor[1], fontColor[2], fontColor[3]);
+    //}
+
+    if (biosFont && biosLogSystem)
     {
-        // Note: REFACTOR THIS LATER!!
-        float fontSize = 0.625f;
-        float fontColor[4] = { 0.96f, 0.80f, 0.23f, 1.0f };
+        //float fontSize = 0.625f;
+        //float fontColor[4] = { 0.96f, 0.80f, 0.23f, 1.0f };
 
         //// this is for debug
         //biosFont->Draw("Press DEL",
-        //    debugFontPosX, debugFontPosY,
-        //    fontSize,
-        //    debugFontColor[0], debugFontColor[1], debugFontColor[2], debugFontColor[3]);
+        //debugFontPosX, debugFontPosY,
+        //fontSize,
+        //debugFontColor[0], debugFontColor[1], debugFontColor[2], debugFontColor[3]);
 
-        biosFont->Draw("BEYOND BREAKER - SYSTEM BOOT LOG \n\nBEYOND Modular BIOS v9.70BB, An Energy Star Ally \nCopyright (C) 1987-2026, Beyond Breaker Software, Inc. ",
-            406.5f, 57.4f,
-            fontSize,
-            fontColor[0], fontColor[1], fontColor[2], fontColor[3]);
-
-        biosFont->Draw("Version BB-4TH-WALL\n\nNEURAL-LINK CPU at 444MHz Memory Test : 640K OK\n(Reference: \"640K ought to be enough for anybody\")",
-            298.0f, 175.74f,
-            fontSize,
-            fontColor[0], fontColor[1], fontColor[2], fontColor[3]);
-
-        biosFont->Draw("Beyond Plug and Play BIOS Extension v1.0A\nCopyright (C) 2026, Beyond Breaker Software, Inc.",
-            298.0f, 296.79f,
-            fontSize,
-            fontColor[0], fontColor[1], fontColor[2], fontColor[3]);
-
-        biosFont->Draw("Detecting Primary Master    ... BEYOND_OS_HD",
-            334.7f, 344.31f,
-            fontSize,
-            fontColor[0], fontColor[1], fontColor[2], fontColor[3]);
-
-        biosFont->Draw("Detecting Primary Slave     ... NONE",
-            334.7f, 368.5f,
-            fontSize,
-            fontColor[0], fontColor[1], fontColor[2], fontColor[3]);
-
-        biosFont->Draw("Detecting Secondary Master  ... BLOCK_DATABASE",
-            334.7f, 392.5f,
-            fontSize,
-            fontColor[0], fontColor[1], fontColor[2], fontColor[3]);
-
-        biosFont->Draw("Detecting Secondary Slave   ... [!] WARNING: ANOMALY_DETECTED",
-            334.7f, 416.5f,
-            fontSize,
-            fontColor[0], fontColor[1], fontColor[2], fontColor[3]);
-
-        biosFont->Draw("[CRITICAL ALERT] Sector 0x004 is bleeding.\nThe blocks are no longer static. The Wall is thinner than you think.",
-            298.7f, 560.0f,
-            fontSize,
-            fontColor[0], fontColor[1], fontColor[2], fontColor[3]);
-
-        biosFont->Draw("Press DEL to enter SETUP Press F1 to ESCAPE THE GRID\n09/01/2026-BB-586B-W877-2A5LEF09C-00",
-            298.7f, 973.5f,
-            fontSize,
-            fontColor[0], fontColor[1], fontColor[2], fontColor[3]);
-
-
-
+        // GANTI SEMUA LOGIC TEXT LAMA DENGAN INI:
+        biosLogSystem->Render(biosFont.get());
     }
 
 }
@@ -170,30 +243,30 @@ void SceneIntro::OnResize(int width, int height)
 void SceneIntro::DrawGUI()
 {
     // Membuat window debug baru
-    ImGui::Begin("Font Debugger");
+    //ImGui::Begin("Font Debugger");
 
-    ImGui::Text("Adjust Font Transform:");
+    //ImGui::Text("Adjust Font Transform:");
 
-    // Slider untuk Posisi (Range 0 sampai resolusi layar)
-    ImGui::SliderFloat("Pos X", &debugFontPosX, 0.0f, 1280.0f);
-    ImGui::SliderFloat("Pos Y", &debugFontPosY, 0.0f, 1080.0f);
+    //// Slider untuk Posisi (Range 0 sampai resolusi layar)
+    //ImGui::SliderFloat("Pos X", &debugFontPosX, 0.0f, 1280.0f);
+    //ImGui::SliderFloat("Pos Y", &debugFontPosY, 0.0f, 1080.0f);
 
-    // Slider untuk Ukuran (Scale)
-    ImGui::SliderFloat("Font Scale", &debugFontSize, 0.1f, 5.0f);
+    //// Slider untuk Ukuran (Scale)
+    //ImGui::SliderFloat("Font Scale", &debugFontSize, 0.1f, 5.0f);
 
-    ImGui::Separator();
+    //ImGui::Separator();
 
-    // Color Picker untuk Warna Font
-    ImGui::Text("Font Color:");
-    ImGui::ColorEdit4("Color", debugFontColor);
+    //// Color Picker untuk Warna Font
+    //ImGui::Text("Font Color:");
+    //ImGui::ColorEdit4("Color", debugFontColor);
 
-    // Tombol Reset jika posisi berantakan
-    if (ImGui::Button("Reset Position"))
-    {
-        debugFontPosX = 800.0f;
-        debugFontPosY = 50.0f;
-        debugFontSize = 1.0f;
-    }
+    //// Tombol Reset jika posisi berantakan
+    //if (ImGui::Button("Reset Position"))
+    //{
+    //    debugFontPosX = 800.0f;
+    //    debugFontPosY = 50.0f;
+    //    debugFontSize = 1.0f;
+    //}
 
-    ImGui::End();
+    //ImGui::End();
 }

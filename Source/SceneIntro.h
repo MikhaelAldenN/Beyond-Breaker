@@ -6,6 +6,7 @@
 #include "System/Sprite.h" 
 #include "BitmapFont.h"
 #include "imgui.h"
+#include "Typewriter.h"
 
 class SceneIntro : public Scene
 {
@@ -27,6 +28,7 @@ private:
 
     std::unique_ptr<Sprite> bgSpriteIntro;
     std::unique_ptr<Sprite> spriteLogoBoot;
+    std::unique_ptr<Typewriter> biosLogSystem;
 
     // --- Variabel Debug Font ---
     float debugFontPosX = 298.0f; 
