@@ -1,4 +1,5 @@
 #include "SceneIntroBios.h"
+#include "SceneIntroOS.h"
 #include "SceneTitle.h"
 #include "Framework.h"
 #include "System/Input.h"
@@ -108,22 +109,54 @@ SceneIntroBios::SceneIntroBios()
 
 void SceneIntroBios::Update(float elapsedTime)
 {
-    // Update Typewriter (return true kalau ada huruf baru, bisa buat play sound)
+    // 1. Jika sedang fase Black Screen (Exiting)
+    if (isExiting)
+    {
+        exitTimer += elapsedTime;
+        if (exitTimer >= EXIT_DELAY)
+        {
+            // Waktu habis, pindah ke OS Scene
+            Framework::Instance()->ChangeScene(std::make_unique<SceneIntroOS>());
+        }
+        return; // Stop update logic lainnya
+    }
+
+    // 2. Logic Normal (BIOS Text berjalan)
     if (biosLogSystem)
     {
         biosLogSystem->Update(elapsedTime);
     }
 
-    // SEMENTARA: Tekan Enter untuk lanjut ke Title
+    // 3. Logic Input (Enter) atau Auto-Finish
+    // Cek apakah user tekan Enter
     if (Input::Instance().GetKeyboard().IsTriggered(VK_RETURN))
     {
-        Framework::Instance()->ChangeScene(std::make_unique<SceneTitle>());
+        // Jika teks BIOS belum selesai -> Percepat/Skip Text
+        if (biosLogSystem && !biosLogSystem->IsFinished())
+        {
+            biosLogSystem->SkipCurrentLine();
+        }
+        // Jika teks SUDAH selesai -> Masuk fase Black Screen
+        else
+        {
+            isExiting = true;
+        }
     }
+
+    // Opsi Tambahan: Kalau teks sudah selesai sendiri tanpa ditekan Enter
+    // Tambahkan delay dikit biar gak kaget, lalu masuk black screen
+    /*
+    if (biosLogSystem && biosLogSystem->IsFinished()) {
+        // logic auto exit disini
+    }
+    */
 }
 
 void SceneIntroBios::Render(float dt, Camera* targetCamera)
 {
     auto dc = Graphics::Instance().GetDeviceContext();
+
+    if (isExiting) return;
 
     // --- 2. AKTIFKAN BLEND STATE SEBELUM GAMBAR FONT ---
         // Parameter: (BlendState, BlendFactor, SampleMask)

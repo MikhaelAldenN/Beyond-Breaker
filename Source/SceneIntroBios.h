@@ -35,4 +35,9 @@ private:
     float debugFontPosY = 175.74f;
     float debugFontSize = 0.417f;
     float debugFontColor[4] = { 1.0f, 1.0f, 1.0f, 1.0f }; // Default Kuning (RGBA)
+
+    // TAMBAHAN LOGIC BLACK SCREEN
+    bool isExiting = false;      // Apakah kita sedang di fase layar hitam?
+    float exitTimer = 0.0f;      // Timer penghitung durasi layar hitam
+    const float EXIT_DELAY = 1.5f; // Lama layar hitam (detik)
 };

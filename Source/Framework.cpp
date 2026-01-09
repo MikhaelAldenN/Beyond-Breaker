@@ -12,6 +12,7 @@
 #include "SceneTitle.h"
 #include "SceneIntroBios.h"
 #include "SceneGameBreaker.h"
+#include "SceneIntroOS.h"
 
 Framework* Framework::pInstance = nullptr;
 
@@ -99,7 +100,7 @@ void Framework::Render(float elapsedTime)
 
         // 2. Cek apakah scene yang aktif sekarang adalah SceneIntroBios?
         // Jika IYA, ubah warna background jadi HITAM (0,0,0)
-        if (dynamic_cast<SceneIntroBios*>(scene.get()))
+        if (dynamic_cast<SceneIntroBios*>(scene.get()) || dynamic_cast<SceneIntroOS*>(scene.get()))
         {
             bgR = 0.0f;
             bgG = 0.0f;
