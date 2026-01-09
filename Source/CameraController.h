@@ -9,6 +9,7 @@ enum class CameraControlMode
     GamePad,
     Mouse,
     FixedFollow,
+    FixedStatic,
     Free
 };
 
@@ -31,6 +32,8 @@ public:
 
     // Set the target/focus point for the camera (e.g., Player position)
     void SetTarget(const DirectX::XMFLOAT3& target);
+
+    void SetFixedSetting(const DirectX::XMFLOAT3& value);
 
     // Switch control modes
     void SetControlMode(CameraControlMode mode);

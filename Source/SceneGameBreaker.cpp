@@ -13,11 +13,12 @@ SceneGameBreaker::SceneGameBreaker()
     // 1. Initialize Main Assets
     mainCamera = new Camera();
     mainCamera->SetPerspectiveFov(DirectX::XMConvertToRadians(45), screenW / screenH, 0.1f, 1000.0f);
-    mainCamera->SetPosition(0, 5, -5);
-    mainCamera->LookAt({ 0, 0, 0 });
+    auto& camCtrl = CameraController::Instance();
+    camCtrl.SetActiveCamera(mainCamera);
 
-    CameraController::Instance().SetActiveCamera(mainCamera);
-    CameraController::Instance().SetControlMode(CameraControlMode::GamePad);
+    camCtrl.SetControlMode(CameraControlMode::FixedStatic);
+    camCtrl.SetFixedSetting({ 0.0f, 18.0f, 0.0f });
+    camCtrl.SetTarget({ 0.0f, 0.0f, 0.0f });
 
     player = new Player();
 }
@@ -35,7 +36,14 @@ void SceneGameBreaker::Update(float elapsedTime)
     if (player)
     {
         player->Update(elapsedTime, activeCam);
-        CameraController::Instance().SetTarget(player->GetPosition());
+        if (CameraController::Instance().GetControlMode() != CameraControlMode::FixedStatic)
+        {
+            CameraController::Instance().SetTarget(player->GetPosition());
+        }
+        else
+        {
+            CameraController::Instance().SetTarget({ 0.0f, 0.0f, 0.0f });
+        }
     }
 
     CameraController::Instance().Update(elapsedTime);
