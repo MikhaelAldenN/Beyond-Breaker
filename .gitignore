@@ -44,6 +44,9 @@
 # Folder internal Visual Studio
 .vs/
 out/
+Debug/
+Release/
+x64/
 
 # File hasil build dan log
 *.user
