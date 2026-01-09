@@ -72,6 +72,13 @@ void CameraController::Update(float elapsedTime)
     }
     break;
 
+    case CameraControlMode::FixedStatic:
+    {
+        activeCamera->SetPosition(fixedPosition);
+        activeCamera->LookAt(target);
+    }
+    break;
+
     case CameraControlMode::Free:
     {
         // 1. Rotation (Mouse)
@@ -181,6 +188,11 @@ void CameraController::SetTarget(const DirectX::XMFLOAT3& target)
     this->target = target;
 }
 
+void CameraController::SetFixedSetting(const DirectX::XMFLOAT3& value)
+{
+    this->fixedPosition = value;
+}
+
 void CameraController::SetControlMode(CameraControlMode mode)
 {
     // Logika sinkronisasi saat ganti mode
@@ -222,6 +234,9 @@ void CameraController::DrawDebugGUI()
         if (ImGui::RadioButton("Fixed Follow", controlMode == CameraControlMode::FixedFollow)) {
             SetControlMode(CameraControlMode::FixedFollow);
         }
+        if (ImGui::RadioButton("Fixed Static", controlMode == CameraControlMode::FixedStatic)) {
+            SetControlMode(CameraControlMode::FixedStatic);
+        }
         ImGui::SameLine();
         if (ImGui::RadioButton("GamePad", controlMode == CameraControlMode::GamePad)) {
             SetControlMode(CameraControlMode::GamePad);
@@ -249,6 +264,11 @@ void CameraController::DrawDebugGUI()
         {
             ImGui::Text("Fixed Settings");
             ImGui::DragFloat3("Offset", &fixedPosition.x, 0.1f);
+        }
+        else if (controlMode == CameraControlMode::FixedStatic)
+        {
+            ImGui::Text("Fixed Static Settings");
+            ImGui::DragFloat3("Position", &fixedPosition.x, 0.1f);
         }
         else if (controlMode == CameraControlMode::Free)
         {
