@@ -129,6 +129,11 @@ int main(int argc, char* argv[])
             // Input::Instance().HandleSDLEvent(&event); // Opsional
             if (event.type == SDL_EVENT_QUIT)
                 running = false;
+
+            if (event.type == SDL_EVENT_KEY_DOWN && event.key.key == SDLK_ESCAPE)
+            {
+                running = false;
+            }
         }
 
         // Time Step
