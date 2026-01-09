@@ -5,6 +5,7 @@
 #include "Camera.h"
 #include "System/Sprite.h" 
 #include "BitmapFont.h"
+#include "imgui.h"
 
 class SceneIntro : public Scene
 {
@@ -26,6 +27,9 @@ private:
 
     std::unique_ptr<Sprite> bgSpriteIntro;
 
-    // Vars here
-    // float bootTimer = 0.0f;
+    // --- Variabel Debug Font ---
+    float debugFontPosX = 271.0f;
+    float debugFontPosY = 38.5f;
+    float debugFontSize = 0.417f;
+    float debugFontColor[4] = { 1.0f, 1.0f, 1.0f, 1.0f }; // Default Kuning (RGBA)
 };

@@ -20,7 +20,7 @@ Framework::Framework()
     pInstance = this;
 
     Graphics::Instance().Initialize();
-    mainWindow = std::make_unique<GameWindow>("Main Game Window", 1280, 720);
+    mainWindow = std::make_unique<GameWindow>("Main Game Window", 1920, 1080);
 
     Input::Instance().Initialize(mainWindow->GetHWND());
     ImGuiRenderer::Initialize(mainWindow->GetHWND(), Graphics::Instance().GetDevice(), Graphics::Instance().GetDeviceContext());

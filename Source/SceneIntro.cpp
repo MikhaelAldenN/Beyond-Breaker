@@ -62,8 +62,8 @@ void SceneIntro::Render(float dt, Camera* targetCamera)
 
 
     // PERBAIKAN: Ambil ukuran layar dari Framework -> MainWindow
-    float sw = 1280.0f;
-    float sh = 720.0f;
+    float sw = 1920;
+    float sh = 1080;
 
         // Render Sprite
     if (bgSpriteIntro)
@@ -76,17 +76,34 @@ void SceneIntro::Render(float dt, Camera* targetCamera)
             0.5f,              // Posisi Z (Depth)
             sw, sh,         // Lebar & Tinggi (Fullscreen)
             0.0f,           // Rotasi (Angle)
-            1.0f, 1.0f, 1.0f, 1.0f // Warna (Putih/Normal)
+            1.0f, 1.0f, 1.0f, 0.2f // Warna (Putih/Normal)
         );
     }
 
     if (biosFont)
     {
-        // Sekarang kotak-kotak itu akan transparan dan membentuk huruf!
-        biosFont->Draw("SYSTEM BOOT...", 50, 50, 1.0f);
+        // this is for debug
+        biosFont->Draw("BEYOND BREAKER - SYSTEM BOOT LOG",
+            debugFontPosX, debugFontPosY,
+            debugFontSize,
+            debugFontColor[0], debugFontColor[1], debugFontColor[2], debugFontColor[3]);
 
-        // Tes warna warni
-        biosFont->Draw("TAHUN BARU DI RUMAH SAJA", 800, 50, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f); // Kuning
+
+        // Note: REFACTOR THIS LATER!!
+        float fontSize = 0.417f;
+        float fontColor[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+
+        biosFont->Draw("BEYOND BREAKER - SYSTEM BOOT LOG",
+            271.0f, 38.5f,
+            fontSize,
+            fontColor[0], fontColor[1], fontColor[2], fontColor[3]);
+
+        biosFont->Draw("BEYOND BREAKER - SYSTEM BOOT LOG",
+            271.0f, 38.5f,
+            fontSize,
+            fontColor[0], fontColor[1], fontColor[2], fontColor[3]);
+
+
     }
 
 }
@@ -101,5 +118,31 @@ void SceneIntro::OnResize(int width, int height)
 
 void SceneIntro::DrawGUI()
 {
-    // Kosong dulu
+    // Membuat window debug baru
+    ImGui::Begin("Font Debugger");
+
+    ImGui::Text("Adjust Font Transform:");
+
+    // Slider untuk Posisi (Range 0 sampai resolusi layar)
+    ImGui::SliderFloat("Pos X", &debugFontPosX, 0.0f, 1280.0f);
+    ImGui::SliderFloat("Pos Y", &debugFontPosY, 0.0f, 720.0f);
+
+    // Slider untuk Ukuran (Scale)
+    ImGui::SliderFloat("Font Scale", &debugFontSize, 0.1f, 5.0f);
+
+    ImGui::Separator();
+
+    // Color Picker untuk Warna Font
+    ImGui::Text("Font Color:");
+    ImGui::ColorEdit4("Color", debugFontColor);
+
+    // Tombol Reset jika posisi berantakan
+    if (ImGui::Button("Reset Position"))
+    {
+        debugFontPosX = 800.0f;
+        debugFontPosY = 50.0f;
+        debugFontSize = 1.0f;
+    }
+
+    ImGui::End();
 }
