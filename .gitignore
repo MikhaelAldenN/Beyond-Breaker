@@ -60,6 +60,7 @@ x64/
 *.lib
 *.FileListAbsolute.txt
 *.idb
+*.ini
 
 # Mengabaikan folder build global
 [Oo]bj/
