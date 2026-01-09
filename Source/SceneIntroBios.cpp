@@ -1,4 +1,4 @@
-#include "SceneIntro.h"
+#include "SceneIntroBios.h"
 #include "SceneTitle.h"
 #include "Framework.h"
 #include "System/Input.h"
@@ -6,7 +6,7 @@
 
 std::unique_ptr<BitmapFont> biosFont;
 
-SceneIntro::SceneIntro()
+SceneIntroBios::SceneIntroBios()
 {
     // Setup Camera 2D (Resolusi standar 1280x720)
     camera = std::make_unique<Camera>();
@@ -100,13 +100,13 @@ SceneIntro::SceneIntro()
         298.7f, 560.0f, fSize, yellow // Pakai warna MERAH
     );
 
-    biosLogSystem->AddLine(
-        "Press DEL to enter SETUP Press F1 to ESCAPE THE GRID\n09/01/2026-BB-586B-W877-2A5LEF09C-00",
-        298.7f, 973.5f, fSize, yellow
-    );
+    //biosLogSystem->AddLine(
+    //    "Press DEL to enter SETUP Press F1 to ESCAPE THE GRID\n09/01/2026-BB-586B-W877-2A5LEF09C-00",
+    //    298.7f, 973.5f, fSize, yellow
+    //);
 }
 
-void SceneIntro::Update(float elapsedTime)
+void SceneIntroBios::Update(float elapsedTime)
 {
     // Update Typewriter (return true kalau ada huruf baru, bisa buat play sound)
     if (biosLogSystem)
@@ -121,7 +121,7 @@ void SceneIntro::Update(float elapsedTime)
     }
 }
 
-void SceneIntro::Render(float dt, Camera* targetCamera)
+void SceneIntroBios::Render(float dt, Camera* targetCamera)
 {
     auto dc = Graphics::Instance().GetDeviceContext();
 
@@ -215,6 +215,18 @@ void SceneIntro::Render(float dt, Camera* targetCamera)
     //        fontColor[0], fontColor[1], fontColor[2], fontColor[3]);
     //}
 
+    if (biosFont)
+    {
+            float fontSize = 0.625f;
+            float fontColor[4] = { 0.96f, 0.80f, 0.23f, 1.0f };
+
+            biosFont->Draw("Press DEL to enter SETUP Press F1 to ESCAPE THE GRID\n09/01/2026-BB-586B-W877-2A5LEF09C-00",
+            298.7f, 973.5f,
+            fontSize,
+            fontColor[0], fontColor[1], fontColor[2], fontColor[3]);
+
+    }
+
     if (biosFont && biosLogSystem)
     {
         //float fontSize = 0.625f;
@@ -232,7 +244,7 @@ void SceneIntro::Render(float dt, Camera* targetCamera)
 
 }
 
-void SceneIntro::OnResize(int width, int height)
+void SceneIntroBios::OnResize(int width, int height)
 {
     if (camera && height > 0)
     {
@@ -240,7 +252,7 @@ void SceneIntro::OnResize(int width, int height)
     }
 }
 
-void SceneIntro::DrawGUI()
+void SceneIntroBios::DrawGUI()
 {
     // Membuat window debug baru
     //ImGui::Begin("Font Debugger");

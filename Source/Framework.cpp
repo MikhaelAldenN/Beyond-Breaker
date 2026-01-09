@@ -10,7 +10,7 @@
 #include "WindowManager.h"
 #include "SceneGame.h"
 #include "SceneTitle.h"
-#include "SceneIntro.h"
+#include "SceneIntroBios.h"
 #include "SceneGameBreaker.h"
 
 Framework* Framework::pInstance = nullptr;
@@ -26,10 +26,10 @@ Framework::Framework()
     ImGuiRenderer::Initialize(mainWindow->GetHWND(), Graphics::Instance().GetDevice(), Graphics::Instance().GetDeviceContext());
 
     // 1. Inisialisasi scene awal menjadi SceneTitle (bukan SceneGame)
-    scene = std::make_unique<SceneIntro>();
+    scene = std::make_unique<SceneIntroBios>();
 
     // 2. Set kamera awal berdasarkan SceneTitle
-    if (auto introScene = dynamic_cast<SceneIntro*>(scene.get()))
+    if (auto introScene = dynamic_cast<SceneIntroBios*>(scene.get()))
     {
         mainWindow->SetCamera(introScene->GetCamera());
     }
@@ -97,9 +97,9 @@ void Framework::Render(float elapsedTime)
         float bgG = 0.5f;
         float bgB = 0.5f;
 
-        // 2. Cek apakah scene yang aktif sekarang adalah SceneIntro?
+        // 2. Cek apakah scene yang aktif sekarang adalah SceneIntroBios?
         // Jika IYA, ubah warna background jadi HITAM (0,0,0)
-        if (dynamic_cast<SceneIntro*>(scene.get()))
+        if (dynamic_cast<SceneIntroBios*>(scene.get()))
         {
             bgR = 0.0f;
             bgG = 0.0f;

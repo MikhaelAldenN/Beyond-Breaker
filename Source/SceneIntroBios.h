@@ -8,11 +8,11 @@
 #include "imgui.h"
 #include "Typewriter.h"
 
-class SceneIntro : public Scene
+class SceneIntroBios : public Scene
 {
 public:
-    SceneIntro();
-    ~SceneIntro() override = default;
+    SceneIntroBios();
+    ~SceneIntroBios() override = default;
 
     void Update(float elapsedTime) override;
     void Render(float dt, Camera* camera = nullptr) override;
