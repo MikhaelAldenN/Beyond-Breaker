@@ -19,6 +19,7 @@ public:
     void SetPosition(const DirectX::XMFLOAT3& pos) { position = pos; }
 
     float GetRotationY() const { return rotationY; }
+    void SetRotationY(float rad) { rotationY = rad; }
     const DirectX::XMFLOAT3& GetVelocity() const { return velocity; }
 
     // Status checks

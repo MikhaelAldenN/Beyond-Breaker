@@ -21,29 +21,24 @@ SceneGameBreaker::SceneGameBreaker()
     camCtrl.SetTarget({ 0.0f, 0.0f, 0.0f });
 
     player = new Player();
+
+    paddle = new Paddle();
 }
 
 SceneGameBreaker::~SceneGameBreaker()
 {
     if (mainCamera) delete mainCamera;
     if (player) delete player;
+    if (paddle) delete paddle;
 }
 
 void SceneGameBreaker::Update(float elapsedTime)
 {
     // Update Player & Camera Controller
     Camera* activeCam = CameraController::Instance().GetActiveCamera();
-    if (player)
+    if (paddle)
     {
-        player->Update(elapsedTime, activeCam);
-        if (CameraController::Instance().GetControlMode() != CameraControlMode::FixedStatic)
-        {
-            CameraController::Instance().SetTarget(player->GetPosition());
-        }
-        else
-        {
-            CameraController::Instance().SetTarget({ 0.0f, 0.0f, 0.0f });
-        }
+        paddle->Update(elapsedTime, activeCam);
     }
 
     CameraController::Instance().Update(elapsedTime);
@@ -77,6 +72,7 @@ void SceneGameBreaker::RenderScene(float elapsedTime, Camera* camera)
     auto dc = Graphics::Instance().GetDeviceContext();
     auto primRenderer = Graphics::Instance().GetPrimitiveRenderer();
     auto modelRenderer = Graphics::Instance().GetModelRenderer();
+    RenderContext rc{ dc, Graphics::Instance().GetRenderState(), camera, nullptr };
 
     // Draw Grid
     primRenderer->DrawGrid(20, 1);
@@ -85,8 +81,14 @@ void SceneGameBreaker::RenderScene(float elapsedTime, Camera* camera)
     // Draw Player
     if (player)
     {
-        RenderContext rc{ dc, Graphics::Instance().GetRenderState(), camera, nullptr };
         player->Render(modelRenderer);
+        modelRenderer->Render(rc);
+    }
+
+    // Draw Paddle
+    if (paddle)
+    {
+        paddle->Render(modelRenderer);
         modelRenderer->Render(rc);
     }
 }
