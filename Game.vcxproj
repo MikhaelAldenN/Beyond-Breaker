@@ -140,6 +140,8 @@
     <ClInclude Include="Source\PlayerState.h" />
     <ClInclude Include="Source\PlayerStates.h" />
     <ClInclude Include="Source\Scene.h" />
+    <ClInclude Include="Source\SceneGameBeyond.h" />
+    <ClInclude Include="Source\SceneGameBreaker.h" />
     <ClInclude Include="Source\SceneIntro.h" />
     <ClInclude Include="Source\SceneTitle.h" />
     <ClInclude Include="Source\StateMachine.h" />
@@ -167,7 +169,6 @@
     <ClInclude Include="Source\System\ShapeRenderer.h" />
     <ClInclude Include="Source\System\Sprite.h" />
     <ClInclude Include="Source\System\TransformUtils.h" />
-    <ClInclude Include="Source\SceneGame.h" />
     <ClInclude Include="Source\WindowManager.h" />
   </ItemGroup>
   <ItemGroup>
@@ -193,6 +194,8 @@
     <ClCompile Include="Source\GameWindow.cpp" />
     <ClCompile Include="Source\Main.cpp" />
     <ClCompile Include="Source\Player.cpp" />
+    <ClCompile Include="Source\SceneGameBeyond.cpp" />
+    <ClCompile Include="Source\SceneGameBreaker.cpp" />
     <ClCompile Include="Source\SceneIntro.cpp" />
     <ClCompile Include="Source\SceneTitle.cpp" />
     <ClCompile Include="Source\System\BasicShader.cpp" />
@@ -214,7 +217,6 @@
     <ClCompile Include="Source\System\ShapeRenderer.cpp" />
     <ClCompile Include="Source\System\Sprite.cpp" />
     <ClCompile Include="Source\System\TransformUtils.cpp" />
-    <ClCompile Include="Source\SceneGame.cpp" />
     <ClCompile Include="Source\WindowManager.cpp" />
   </ItemGroup>
   <ItemGroup>

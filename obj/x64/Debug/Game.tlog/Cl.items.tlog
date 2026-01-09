@@ -20,6 +20,8 @@ C:\Users\2240763\Desktop\Beyond Breaker\Source\FreeCameraController.cpp;C:\Users
 C:\Users\2240763\Desktop\Beyond Breaker\Source\GameWindow.cpp;C:\Users\2240763\Desktop\Beyond Breaker\obj\x64\Debug\GameWindow.obj
 C:\Users\2240763\Desktop\Beyond Breaker\Source\Main.cpp;C:\Users\2240763\Desktop\Beyond Breaker\obj\x64\Debug\Main.obj
 C:\Users\2240763\Desktop\Beyond Breaker\Source\Player.cpp;C:\Users\2240763\Desktop\Beyond Breaker\obj\x64\Debug\Player.obj
+C:\Users\2240763\Desktop\Beyond Breaker\Source\SceneGameBeyond.cpp;C:\Users\2240763\Desktop\Beyond Breaker\obj\x64\Debug\SceneGameBeyond.obj
+C:\Users\2240763\Desktop\Beyond Breaker\Source\SceneGameBreaker.cpp;C:\Users\2240763\Desktop\Beyond Breaker\obj\x64\Debug\SceneGameBreaker.obj
 C:\Users\2240763\Desktop\Beyond Breaker\Source\SceneIntro.cpp;C:\Users\2240763\Desktop\Beyond Breaker\obj\x64\Debug\SceneIntro.obj
 C:\Users\2240763\Desktop\Beyond Breaker\Source\SceneTitle.cpp;C:\Users\2240763\Desktop\Beyond Breaker\obj\x64\Debug\SceneTitle.obj
 C:\Users\2240763\Desktop\Beyond Breaker\Source\System\BasicShader.cpp;C:\Users\2240763\Desktop\Beyond Breaker\obj\x64\Debug\BasicShader.obj
@@ -41,5 +43,4 @@ C:\Users\2240763\Desktop\Beyond Breaker\Source\System\RenderState.cpp;C:\Users\2
 C:\Users\2240763\Desktop\Beyond Breaker\Source\System\ShapeRenderer.cpp;C:\Users\2240763\Desktop\Beyond Breaker\obj\x64\Debug\ShapeRenderer.obj
 C:\Users\2240763\Desktop\Beyond Breaker\Source\System\Sprite.cpp;C:\Users\2240763\Desktop\Beyond Breaker\obj\x64\Debug\Sprite.obj
 C:\Users\2240763\Desktop\Beyond Breaker\Source\System\TransformUtils.cpp;C:\Users\2240763\Desktop\Beyond Breaker\obj\x64\Debug\TransformUtils.obj
-C:\Users\2240763\Desktop\Beyond Breaker\Source\SceneGame.cpp;C:\Users\2240763\Desktop\Beyond Breaker\obj\x64\Debug\SceneGame.obj
 C:\Users\2240763\Desktop\Beyond Breaker\Source\WindowManager.cpp;C:\Users\2240763\Desktop\Beyond Breaker\obj\x64\Debug\WindowManager.obj

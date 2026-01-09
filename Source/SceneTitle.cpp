@@ -1,5 +1,5 @@
 #include "SceneTitle.h"
-#include "SceneGame.h"
+#include "SceneGameBreaker.h"
 #include "Framework.h"       // PENTING: Untuk akses ukuran layar (Window)
 #include "System/Input.h"
 #include "System/Graphics.h" // PENTING: Untuk akses Device & Context
@@ -23,7 +23,7 @@ void SceneTitle::Update(float elapsedTime)
     // Logika pindah scene
     if (Input::Instance().GetKeyboard().IsTriggered(VK_RETURN))
     {
-        Framework::Instance()->ChangeScene(std::make_unique<SceneGame>());
+        Framework::Instance()->ChangeScene(std::make_unique<SceneGameBreaker>());
     }
 }
 

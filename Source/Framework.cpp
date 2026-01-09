@@ -11,6 +11,7 @@
 #include "SceneGame.h"
 #include "SceneTitle.h"
 #include "SceneIntro.h"
+#include "SceneGameBreaker.h"
 
 Framework* Framework::pInstance = nullptr;
 
@@ -64,6 +65,10 @@ void Framework::Update(float elapsedTime)
         if (auto gameScene = dynamic_cast<SceneGame*>(scene.get()))
         {
             mainWindow->SetCamera(gameScene->GetMainCamera());
+        }
+        else if (auto breakerScene = dynamic_cast<SceneGameBreaker*>(scene.get()))
+        {
+            mainWindow->SetCamera(breakerScene->GetMainCamera());
         }
         // Jika Title scene punya kamera sendiri, kita bisa set di sini atau biarkan default
         else if (auto titleScene = dynamic_cast<SceneTitle*>(scene.get()))
