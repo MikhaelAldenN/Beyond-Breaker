@@ -11,7 +11,7 @@ SceneIntroBios::SceneIntroBios()
 {
     // Setup Camera 2D (Resolusi standar 1280x720)
     camera = std::make_unique<Camera>();
-    camera->SetOrthographic(1280.0f, 720.0f, 0.1f, 1000.0f);
+    camera->SetOrthographic(1920.0f, 1080.0f, 0.1f, 1000.0f);
 
     biosFont = std::make_unique<BitmapFont>(
         "Data/Font/IBM_VGA_32px_0.png",
