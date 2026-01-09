@@ -92,8 +92,22 @@ void Framework::Render(float elapsedTime)
 {
     if (mainWindow)
     {
-        mainWindow->BeginRender(0.5f, 0.5f, 0.5f);
+        // 1. Tentukan warna default (Abu-abu seperti sebelumnya)
+        float bgR = 0.5f;
+        float bgG = 0.5f;
+        float bgB = 0.5f;
 
+        // 2. Cek apakah scene yang aktif sekarang adalah SceneIntro?
+        // Jika IYA, ubah warna background jadi HITAM (0,0,0)
+        if (dynamic_cast<SceneIntro*>(scene.get()))
+        {
+            bgR = 0.0f;
+            bgG = 0.0f;
+            bgB = 0.0f;
+        }
+
+        // 3. Masukkan variabel warna ke BeginRender
+        mainWindow->BeginRender(bgR, bgG, bgB);
         if (scene)
         {
             scene->OnResize(mainWindow->GetWidth(), mainWindow->GetHeight());

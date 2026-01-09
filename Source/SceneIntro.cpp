@@ -22,6 +22,10 @@ SceneIntro::SceneIntro()
         "Data/Sprite/Placeholder/[PLACEHOLDER]Back_Boot.png"
     );
 
+    spriteLogoBoot = std::make_unique<Sprite>(
+        Graphics::Instance().GetDevice(),
+        "Data/Sprite/Scene Intro/Sprite_OrangSoloItu.png"
+    );
 
     // --- 1. BUAT BLEND STATE (Hanya sekali di awal) ---
     D3D11_BLEND_DESC blendDesc = {};
@@ -65,43 +69,90 @@ void SceneIntro::Render(float dt, Camera* targetCamera)
     float sw = 1920;
     float sh = 1080;
 
-        // Render Sprite
-    if (bgSpriteIntro)
+    //    // Render Sprite
+    //if (bgSpriteIntro)
+    //{
+    //    // PERBAIKAN: Sesuaikan argumen dengan Sprite.h yang kamu upload
+    //    // Render(dc, x, y, z, w, h, angle, r, g, b, a)
+    //    bgSpriteIntro->Render(
+    //        dc,             // Device Context
+    //        0, 0,           // Posisi X, Y (Kiri Atas)
+    //        0.5f,              // Posisi Z (Depth)
+    //        sw, sh,         // Lebar & Tinggi (Fullscreen)
+    //        0.0f,           // Rotasi (Angle)
+    //        1.0f, 1.0f, 1.0f, 0.2f // Warna (Putih/Normal)
+    //    );
+    //}
+
+    if (spriteLogoBoot)
     {
-        // PERBAIKAN: Sesuaikan argumen dengan Sprite.h yang kamu upload
-        // Render(dc, x, y, z, w, h, angle, r, g, b, a)
-        bgSpriteIntro->Render(
-            dc,             // Device Context
-            0, 0,           // Posisi X, Y (Kiri Atas)
-            0.5f,              // Posisi Z (Depth)
-            sw, sh,         // Lebar & Tinggi (Fullscreen)
-            0.0f,           // Rotasi (Angle)
-            1.0f, 1.0f, 1.0f, 0.2f // Warna (Putih/Normal)
-        );
+		spriteLogoBoot->Render(
+			dc,             // Device Context
+            298.0f, 57.4f,           // Posisi X, Y (Kiri Atas)
+			0.0f,              // Posisi Z (Depth)
+			93, 93,         // Lebar & Tinggi (Fullscreen)
+			0.0f,           // Rotasi (Angle)
+			1.0f, 1.0f, 1.0f, 1.0f // Warna (Putih/Normal)
+		);
     }
 
     if (biosFont)
     {
-        // this is for debug
-        biosFont->Draw("BEYOND BREAKER - SYSTEM BOOT LOG",
-            debugFontPosX, debugFontPosY,
-            debugFontSize,
-            debugFontColor[0], debugFontColor[1], debugFontColor[2], debugFontColor[3]);
-
-
         // Note: REFACTOR THIS LATER!!
-        float fontSize = 0.417f;
-        float fontColor[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+        float fontSize = 0.625f;
+        float fontColor[4] = { 0.96f, 0.80f, 0.23f, 1.0f };
 
-        biosFont->Draw("BEYOND BREAKER - SYSTEM BOOT LOG",
-            271.0f, 38.5f,
+        //// this is for debug
+        //biosFont->Draw("Press DEL",
+        //    debugFontPosX, debugFontPosY,
+        //    fontSize,
+        //    debugFontColor[0], debugFontColor[1], debugFontColor[2], debugFontColor[3]);
+
+        biosFont->Draw("BEYOND BREAKER - SYSTEM BOOT LOG \n\nBEYOND Modular BIOS v9.70BB, An Energy Star Ally \nCopyright (C) 1987-2026, Beyond Breaker Software, Inc. ",
+            406.5f, 57.4f,
             fontSize,
             fontColor[0], fontColor[1], fontColor[2], fontColor[3]);
 
-        biosFont->Draw("BEYOND BREAKER - SYSTEM BOOT LOG",
-            271.0f, 38.5f,
+        biosFont->Draw("Version BB-4TH-WALL\n\nNEURAL-LINK CPU at 444MHz Memory Test : 640K OK\n(Reference: \"640K ought to be enough for anybody\")",
+            298.0f, 175.74f,
             fontSize,
             fontColor[0], fontColor[1], fontColor[2], fontColor[3]);
+
+        biosFont->Draw("Beyond Plug and Play BIOS Extension v1.0A\nCopyright (C) 2026, Beyond Breaker Software, Inc.",
+            298.0f, 296.79f,
+            fontSize,
+            fontColor[0], fontColor[1], fontColor[2], fontColor[3]);
+
+        biosFont->Draw("Detecting Primary Master    ... BEYOND_OS_HD",
+            334.7f, 344.31f,
+            fontSize,
+            fontColor[0], fontColor[1], fontColor[2], fontColor[3]);
+
+        biosFont->Draw("Detecting Primary Slave     ... NONE",
+            334.7f, 368.5f,
+            fontSize,
+            fontColor[0], fontColor[1], fontColor[2], fontColor[3]);
+
+        biosFont->Draw("Detecting Secondary Master  ... BLOCK_DATABASE",
+            334.7f, 392.5f,
+            fontSize,
+            fontColor[0], fontColor[1], fontColor[2], fontColor[3]);
+
+        biosFont->Draw("Detecting Secondary Slave   ... [!] WARNING: ANOMALY_DETECTED",
+            334.7f, 416.5f,
+            fontSize,
+            fontColor[0], fontColor[1], fontColor[2], fontColor[3]);
+
+        biosFont->Draw("[CRITICAL ALERT] Sector 0x004 is bleeding.\nThe blocks are no longer static. The Wall is thinner than you think.",
+            298.7f, 560.0f,
+            fontSize,
+            fontColor[0], fontColor[1], fontColor[2], fontColor[3]);
+
+        biosFont->Draw("Press DEL to enter SETUP Press F1 to ESCAPE THE GRID\n09/01/2026-BB-586B-W877-2A5LEF09C-00",
+            298.7f, 973.5f,
+            fontSize,
+            fontColor[0], fontColor[1], fontColor[2], fontColor[3]);
+
 
 
     }
@@ -125,7 +176,7 @@ void SceneIntro::DrawGUI()
 
     // Slider untuk Posisi (Range 0 sampai resolusi layar)
     ImGui::SliderFloat("Pos X", &debugFontPosX, 0.0f, 1280.0f);
-    ImGui::SliderFloat("Pos Y", &debugFontPosY, 0.0f, 720.0f);
+    ImGui::SliderFloat("Pos Y", &debugFontPosY, 0.0f, 1080.0f);
 
     // Slider untuk Ukuran (Scale)
     ImGui::SliderFloat("Font Scale", &debugFontSize, 0.1f, 5.0f);

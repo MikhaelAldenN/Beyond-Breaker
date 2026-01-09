@@ -26,10 +26,11 @@ private:
     Microsoft::WRL::ComPtr<ID3D11BlendState> blendState;
 
     std::unique_ptr<Sprite> bgSpriteIntro;
+    std::unique_ptr<Sprite> spriteLogoBoot;
 
     // --- Variabel Debug Font ---
-    float debugFontPosX = 271.0f;
-    float debugFontPosY = 38.5f;
+    float debugFontPosX = 298.0f; 
+    float debugFontPosY = 175.74f;
     float debugFontSize = 0.417f;
     float debugFontColor[4] = { 1.0f, 1.0f, 1.0f, 1.0f }; // Default Kuning (RGBA)
 };

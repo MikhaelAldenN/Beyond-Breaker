@@ -59,7 +59,7 @@ void BitmapFont::Draw(const std::string& text, float startX, float startY, float
     float cursorY = startY;
 
     // Jarak antar baris (bisa disesuaikan manual atau ambil dari common lineHeight di .fnt)
-    float lineHeight = 32.0f * scale;
+    float lineHeight = 38.0f * scale;
 
     for (char c : text)
     {
