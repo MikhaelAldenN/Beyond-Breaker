@@ -69,3 +69,4 @@ x64/
 External/**/x64/
 External/**/Debug/
 External/**/Release/
+/obj/x64/Debug/vc143.idb
