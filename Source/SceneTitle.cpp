@@ -14,7 +14,7 @@ SceneTitle::SceneTitle()
     // PERBAIKAN: Sprite butuh 'Device' sebagai parameter pertama
     bgSprite = std::make_unique<Sprite>(
         Graphics::Instance().GetDevice(),
-        "Data/Sprite/TitleAlternate.png"
+        "Data/Sprite/Placeholder/[PLACEHOLDER]Back_Title.png"
     );
 }
 

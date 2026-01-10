@@ -61,7 +61,7 @@ void SceneIntroBios::SetupBiosLog()
 
     biosLogSystem->AddLine(
         "[CRITICAL ALERT] Sector 0x004 is bleeding.\nThe blocks are no longer static. The Wall is thinner than you think.",
-        298.7f, 560.0f, FONT_SIZE, COLOR_RED
+        298.7f, 560.0f, FONT_SIZE, COLOR_YELLOW
     );
 }
 
