@@ -21,8 +21,8 @@ SceneGameBreaker::SceneGameBreaker()
     camCtrl.SetTarget({ 0.0f, 0.0f, 0.0f });
 
     player = new Player();
-
     paddle = new Paddle();
+    ball = new Ball();
 }
 
 SceneGameBreaker::~SceneGameBreaker()
@@ -30,17 +30,37 @@ SceneGameBreaker::~SceneGameBreaker()
     if (mainCamera) delete mainCamera;
     if (player) delete player;
     if (paddle) delete paddle;
+    if (ball) delete ball;
 }
 
 void SceneGameBreaker::Update(float elapsedTime)
 {
     // Update Player & Camera Controller
     Camera* activeCam = CameraController::Instance().GetActiveCamera();
+
     if (paddle)
     {
         paddle->Update(elapsedTime, activeCam);
     }
 
+    if (ball)
+    {
+        ball->Update(elapsedTime, activeCam);
+
+        if (paddle && !ball->IsActive())
+        {
+            DirectX::XMFLOAT3 padPos = paddle->GetPosition();
+
+            padPos.z += 0.3f;
+            padPos.y = 0.0f;
+
+            ball->GetMovement()->SetPosition(padPos);
+        }
+        if (paddle && ball->IsActive())
+        {
+            paddle->CheckCollision(ball);
+        }
+    }
     CameraController::Instance().Update(elapsedTime);
 }
 
@@ -89,6 +109,13 @@ void SceneGameBreaker::RenderScene(float elapsedTime, Camera* camera)
     if (paddle)
     {
         paddle->Render(modelRenderer);
+        modelRenderer->Render(rc);
+    }
+
+    // Draw Ball
+    if (ball)
+    {
+        ball->Render(modelRenderer);
         modelRenderer->Render(rc);
     }
 }

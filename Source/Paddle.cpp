@@ -1,6 +1,7 @@
 #include "Paddle.h"
 #include "System/Graphics.h"
 #include <Windows.h> 
+#include <cmath>
 
 using namespace DirectX;
 
@@ -48,4 +49,40 @@ void Paddle::HandleInput()
     float velocityX = xInput * paddleSpeed;
 
     movement->SetMoveInput(xInput, 0.0f);
+}
+
+void Paddle::CheckCollision(Ball* ball)
+{
+    if (!ball) return;
+
+    auto ballPos = ball->GetPosition();
+    auto padPos = movement->GetPosition();
+
+    // Define Hitboxes
+    float ballRadius = 0.1f;
+    float paddleWidthHalf = 0.8f;
+    float paddleDepthHalf = 0.1f;
+
+    // Collision Logic 
+    float zDist = fabs(ballPos.z - padPos.z);
+
+    if (zDist < (paddleDepthHalf + ballRadius))
+    {
+        float xDist = fabs(ballPos.x - padPos.x);
+
+        if (xDist < (paddleWidthHalf + ballRadius))
+        {
+            // Hit detected
+            auto vel = ball->GetVelocity();
+
+            if (vel.z < 0)
+            {
+                vel.z *= -1;
+                float hitOffset = ballPos.x - padPos.x;
+                vel.x += hitOffset * 2.0f;
+
+                ball->SetVelocity(vel);
+            }
+        }
+    }
 }

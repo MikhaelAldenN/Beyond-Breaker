@@ -8,6 +8,7 @@
 #include "CameraController.h"
 #include "Player.h"
 #include "Paddle.h"
+#include "Ball.h"
 
 class SceneGameBreaker : public Scene
 {
@@ -31,6 +32,7 @@ private:
     Camera* subCamera = nullptr;
     Player* player = nullptr;
     Paddle* paddle = nullptr;
+    Ball* ball = nullptr;
     std::vector<Camera*> additionalCameras;
 
     // --- Tracking Window (Auto-follows player) ---
