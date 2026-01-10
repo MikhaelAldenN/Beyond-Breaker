@@ -25,6 +25,7 @@ Framework::Framework()
 
     Input::Instance().Initialize(mainWindow->GetHWND());
     ImGuiRenderer::Initialize(mainWindow->GetHWND(), Graphics::Instance().GetDevice(), Graphics::Instance().GetDeviceContext());
+    ResourceManager::Instance().LoadFont("VGA_FONT", "Data/Font/IBM_VGA_32px_0.png", "Data/Font/IBM_VGA_32px.fnt");
 
     // 1. Inisialisasi scene awal menjadi SceneTitle (bukan SceneGame)
     scene = std::make_unique<SceneIntroBios>();

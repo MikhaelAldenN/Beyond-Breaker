@@ -5,8 +5,8 @@
 #include "Camera.h"
 #include "System/Sprite.h" 
 #include "BitmapFont.h"
-#include "imgui.h"
 #include "Typewriter.h"
+#include "ResourceManager.h"
 
 class SceneIntroBios : public Scene
 {
@@ -22,26 +22,16 @@ public:
     Camera* GetCamera() const { return camera.get(); }
 
 private:
-    std::unique_ptr<Camera> camera;
-    std::unique_ptr<BitmapFont> biosFont;
-    Microsoft::WRL::ComPtr<ID3D11BlendState> blendState;
+    void SetupBiosLog();
 
-    std::unique_ptr<Sprite> bgSpriteIntro;
+    std::unique_ptr<Camera> camera;
+
+    // Resources
     std::unique_ptr<Sprite> spriteLogoBoot;
     std::unique_ptr<Typewriter> biosLogSystem;
 
-    // --- Variabel Debug Font ---
-    float debugFontPosX = 298.0f; 
-    float debugFontPosY = 175.74f;
-    float debugFontSize = 0.417f;
-    float debugFontColor[4] = { 1.0f, 1.0f, 1.0f, 1.0f }; // Default Kuning (RGBA)
-
-    // TAMBAHAN LOGIC BLACK SCREEN
-    bool isExiting = false;      // Apakah kita sedang di fase layar hitam?
-    float exitTimer = 0.0f;      // Timer penghitung durasi layar hitam
-    const float EXIT_DELAY = 1.5f; // Lama layar hitam (detik)
-
-    // BARU: Timer jeda setelah teks selesai sebelum masuk black screen
-    float finishDelayTimer = 0.0f;
-    const float FINISH_DELAY = 0.5f; // Durasi jeda 0.5 detik
+    // Logic Variables
+    bool isExiting = false;       // Flag untuk fase black screen
+    float exitTimer = 0.0f;       // Timer durasi black screen
+    float finishDelayTimer = 0.0f; // Timer jeda setelah text selesai ketik
 };

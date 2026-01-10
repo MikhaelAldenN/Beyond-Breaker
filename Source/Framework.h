@@ -7,6 +7,8 @@
 #include "System/HighResolutionTimer.h"
 #include "GameWindow.h"
 #include "Scene.h"
+#include "BitmapFont.h" 
+#include "ResourceManager.h"
 
 class Framework
 {
