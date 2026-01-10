@@ -1,7 +1,8 @@
 #include "Paddle.h"
 #include "System/Graphics.h"
-#include <Windows.h> 
+#include <algorithm>
 #include <cmath>
+#include <Windows.h> 
 
 using namespace DirectX;
 
@@ -65,24 +66,23 @@ void Paddle::CheckCollision(Ball* ball)
 
     // Collision Logic 
     float zDist = fabs(ballPos.z - padPos.z);
-
     if (zDist < (paddleDepthHalf + ballRadius))
     {
         float xDist = fabs(ballPos.x - padPos.x);
-
         if (xDist < (paddleWidthHalf + ballRadius))
         {
-            // Hit detected
-            auto vel = ball->GetVelocity();
+            XMVECTOR vVel = XMLoadFloat3(&ball->GetVelocity());
+            float speed = XMVectorGetX(XMVector3Length(vVel));
+            float relativeIntersectX = (ballPos.x - padPos.x) / paddleWidthHalf;
+            float maxBounceAngle = 1.3f;
+            float bounceAngle = relativeIntersectX * maxBounceAngle;
 
-            if (vel.z < 0)
-            {
-                vel.z *= -1;
-                float hitOffset = ballPos.x - padPos.x;
-                vel.x += hitOffset * 2.0f;
+            float newVx = speed * sinf(bounceAngle);
+            float newVz = speed * cosf(bounceAngle);
 
-                ball->SetVelocity(vel);
-            }
+            newVz = fabsf(newVz);
+
+            ball->SetVelocity({ newVx, 0.0f, newVz });
         }
     }
 }

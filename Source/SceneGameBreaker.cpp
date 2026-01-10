@@ -45,8 +45,6 @@ void SceneGameBreaker::Update(float elapsedTime)
 
     if (ball)
     {
-        ball->Update(elapsedTime, activeCam);
-
         if (paddle && !ball->IsActive())
         {
             DirectX::XMFLOAT3 padPos = paddle->GetPosition();
@@ -56,6 +54,9 @@ void SceneGameBreaker::Update(float elapsedTime)
 
             ball->GetMovement()->SetPosition(padPos);
         }
+
+        ball->Update(elapsedTime, activeCam);
+
         if (paddle && ball->IsActive())
         {
             paddle->CheckCollision(ball);
