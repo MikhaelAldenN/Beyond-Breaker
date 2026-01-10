@@ -18,6 +18,6 @@ private:
     void HandleInput();
 
     // Settings
-    float paddleSpeed = 10.0f;
-    float xLimit = 9.1f; // How far left/right it can go
+    float paddleSpeed = 1.5f;
+    float xLimit = 9.1f;        // How far left/right it can go
 };

@@ -9,6 +9,7 @@
 #include "Player.h"
 #include "Paddle.h"
 #include "Ball.h"
+#include "BlockManager.h"
 
 class SceneGameBreaker : public Scene
 {
@@ -26,6 +27,7 @@ public:
 
 private:
     void RenderScene(float elapsedTime, Camera* camera);
+    void GenerateBlocks();
 
     // --- Main Assets ---
     Camera* mainCamera = nullptr;
@@ -33,6 +35,7 @@ private:
     Player* player = nullptr;
     Paddle* paddle = nullptr;
     Ball* ball = nullptr;
+    std::unique_ptr<BlockManager> blockManager;
     std::vector<Camera*> additionalCameras;
 
     // --- Tracking Window (Auto-follows player) ---

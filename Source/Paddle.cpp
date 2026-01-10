@@ -49,7 +49,7 @@ void Paddle::HandleInput()
 
     float velocityX = xInput * paddleSpeed;
 
-    movement->SetMoveInput(xInput, 0.0f);
+    movement->SetMoveInput(velocityX, 0.0f);
 }
 
 void Paddle::CheckCollision(Ball* ball)

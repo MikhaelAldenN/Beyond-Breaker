@@ -21,8 +21,11 @@ SceneGameBreaker::SceneGameBreaker()
     camCtrl.SetTarget({ 0.0f, 0.0f, 0.0f });
 
     player = new Player();
+    player->SetInputEnabled(false);
     paddle = new Paddle();
     ball = new Ball();
+    blockManager = std::make_unique<BlockManager>();
+    blockManager->Initialize(player);
 }
 
 SceneGameBreaker::~SceneGameBreaker()
@@ -38,10 +41,7 @@ void SceneGameBreaker::Update(float elapsedTime)
     // Update Player & Camera Controller
     Camera* activeCam = CameraController::Instance().GetActiveCamera();
 
-    if (paddle)
-    {
-        paddle->Update(elapsedTime, activeCam);
-    }
+    if (paddle) paddle->Update(elapsedTime, activeCam);
 
     if (ball)
     {
@@ -61,7 +61,21 @@ void SceneGameBreaker::Update(float elapsedTime)
         {
             paddle->CheckCollision(ball);
         }
+
     }
+
+    if (blockManager)
+    {
+        blockManager->Update(elapsedTime, activeCam);
+
+        if (ball && ball->IsActive())
+        {
+            blockManager->CheckCollision(ball);
+        }
+    }
+
+    if (player) player->Update(elapsedTime, activeCam);
+
     CameraController::Instance().Update(elapsedTime);
 }
 
@@ -100,25 +114,18 @@ void SceneGameBreaker::RenderScene(float elapsedTime, Camera* camera)
     primRenderer->Render(dc, camera->GetView(), camera->GetProjection(), D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
 
     // Draw Player
-    if (player)
-    {
-        player->Render(modelRenderer);
-        modelRenderer->Render(rc);
-    }
+    if (paddle) paddle->Render(modelRenderer);
 
     // Draw Paddle
-    if (paddle)
-    {
-        paddle->Render(modelRenderer);
-        modelRenderer->Render(rc);
-    }
+    if (ball) ball->Render(modelRenderer);
 
     // Draw Ball
-    if (ball)
-    {
-        ball->Render(modelRenderer);
-        modelRenderer->Render(rc);
-    }
+    if (player) player->Render(modelRenderer);
+
+    // Draw Blocks
+    if (blockManager) blockManager->Render(modelRenderer);
+
+    modelRenderer->Render(rc);
 }
 
 void SceneGameBreaker::DrawGUI()

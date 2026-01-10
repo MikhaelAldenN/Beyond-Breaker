@@ -21,7 +21,7 @@ public:
 
 private:
     DirectX::XMFLOAT3 velocity = { 0, 0, 0 };
-    float speed = 12.0f;            // Speed of the ball
+    float speed = 6.0f;             // Speed of the ball
     float radius = 0.5f;            // Approximate size for collision
 
     // Arena Boundaries 

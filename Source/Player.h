@@ -28,6 +28,9 @@ public:
     // Fungsi ini wajib ada implementasinya di cpp
     bool CheckJumpInput();
 
+    // Control Switch 
+    void SetInputEnabled(bool enable) { isInputEnabled = enable; }
+
     // Set Camera reference
     void SetCamera(Camera* cam) { activeCamera = cam; }
 
@@ -35,4 +38,5 @@ private:
     StateMachine* stateMachine;
     AnimationController* animator;
     Camera* activeCamera = nullptr;
+    bool isInputEnabled = true;
 };
