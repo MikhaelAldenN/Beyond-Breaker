@@ -8,6 +8,13 @@
 #include "BitmapFont.h"
 #include "ResourceManager.h"
 
+enum class OSState
+{
+    AnimatingLogo,  // Logo sedang bergerak masuk
+    ShowText,       // Logo diam, teks muncul
+    Finished        // Siap ganti scene
+};
+
 class SceneIntroOS : public Scene
 {
 public:
@@ -32,6 +39,8 @@ private:
     float timer = 0.0f;
     float blinkTimer = 0.0f;
     float animTimer = 0.0f;
+
+    OSState currentState = OSState::AnimatingLogo;
 
     // Animation State Variables
     // (Kita simpan di sini agar nilainya persisten antar-frame saat Update)

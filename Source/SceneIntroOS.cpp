@@ -54,6 +54,8 @@ SceneIntroOS::SceneIntroOS()
     logo2_StartX = ConfigOS::SCREEN_WIDTH;
     logo2_CurrentX = logo2_StartX;
     logo2_Y = ConfigOS::LOGO_CENTER_Y + ConfigOS::LOGO_OFFSET_Y;
+
+    currentState = OSState::AnimatingLogo;
 }
 
 void SceneIntroOS::Update(float elapsedTime)
@@ -63,19 +65,33 @@ void SceneIntroOS::Update(float elapsedTime)
 
     if (blinkTimer > ConfigOS::BLINK_INTERVAL) blinkTimer = 0;
 
-	// Logo Animation
-    if (animTimer < ConfigOS::ANIM_DURATION)
+	// Animation State Machine
+    switch (currentState)
     {
+    case OSState::AnimatingLogo:
         animTimer += elapsedTime;
-        float t = animTimer / ConfigOS::ANIM_DURATION;
 
-        logo1_CurrentX = MathUtils::Lerp(logo1_StartX, logoTargetX, t);
-        logo2_CurrentX = MathUtils::Lerp(logo2_StartX, logoTargetX, t);
-    }
-    else
-    {
-        logo1_CurrentX = logoTargetX;
-        logo2_CurrentX = logoTargetX;
+        if (animTimer < ConfigOS::ANIM_DURATION)
+        {
+            float t = animTimer / ConfigOS::ANIM_DURATION;
+            logo1_CurrentX = MathUtils::Lerp(logo1_StartX, logoTargetX, t);
+            logo2_CurrentX = MathUtils::Lerp(logo2_StartX, logoTargetX, t);
+        }
+        else
+        {
+            logo1_CurrentX = logoTargetX;
+            logo2_CurrentX = logoTargetX;
+            currentState = OSState::ShowText;
+        }
+        break;
+
+    case OSState::ShowText:
+        // Di sini logo sudah diam, kita hanya menunggu loading time
+        // Jika ingin ada animasi text fade-in, bisa ditambahkan di sini
+        break;
+
+    case OSState::Finished:
+        break;
     }
 
 	// Scene Transition
@@ -126,7 +142,7 @@ void SceneIntroOS::Render(float dt, Camera* targetCamera)
     }
 
     // Render Text
-    if (text)
+    if (currentState == OSState::ShowText && text)
     {
         text->Draw("BRICK-DOS Opereating System\n        Version 1.2",
             733.5f, 593.0f, ConfigOS::FONT_SIZE,
