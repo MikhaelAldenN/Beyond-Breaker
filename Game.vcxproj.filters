@@ -195,6 +195,9 @@
     <ClCompile Include="Source\Typewriter.cpp">
       <Filter>Source\UI</Filter>
     </ClCompile>
+    <ClCompile Include="Source\UIComponents.cpp">
+      <Filter>Source\UI</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\System\BasicShader.h">
@@ -387,6 +390,9 @@
       <Filter>System</Filter>
     </ClInclude>
     <ClInclude Include="Source\Typewriter.h">
+      <Filter>Source\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\UIComponents.h">
       <Filter>Source\UI</Filter>
     </ClInclude>
   </ItemGroup>

@@ -93,11 +93,11 @@ void Framework::Render(float elapsedTime)
     if (mainWindow)
     {
         // Determine background color (Black for Intro scenes, Gray for others)
-        float bgR = 0.5f, bgG = 0.5f, bgB = 0.5f;
+        float bgR = 0.0f, bgG = 0.0f, bgB = 0.0f;
 
-        if (dynamic_cast<SceneIntroBios*>(scene.get()) || dynamic_cast<SceneIntroOS*>(scene.get()))
+        if (dynamic_cast<SceneIntroBios*>(scene.get()) || dynamic_cast<SceneGameBreaker*>(scene.get()))
         {
-            bgR = 0.0f; bgG = 0.0f; bgB = 0.0f;
+            bgR = 0.5f; bgG = 0.5f; bgB = 0.5f;
         }
 
         // Render Main Window
