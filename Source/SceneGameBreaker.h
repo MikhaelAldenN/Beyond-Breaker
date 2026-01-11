@@ -27,7 +27,8 @@ public:
 
 private:
     void RenderScene(float elapsedTime, Camera* camera);
-    void GenerateBlocks();
+    void UpdateGameTriggers(float elapsedTime);
+    bool m_isCameraRotated = false;
 
     // --- Main Assets ---
     Camera* mainCamera = nullptr;
@@ -45,4 +46,10 @@ private:
     // --- Lens Window (Draggable by user) ---
     GameWindow* lensWindow = nullptr;
     Camera* lensCamera = nullptr;
+
+    // --- ANIMATION VARIABLES ---
+    bool m_hasTriggeredRotation = false;
+    bool m_isAnimatingCamera = false;
+    float m_animationTimer = 0.0f;
+    const float m_animationDuration = 2.0f;
 };

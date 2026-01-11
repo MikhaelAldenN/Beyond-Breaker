@@ -15,7 +15,7 @@ Player::Player()
     // 1. Init Model
     ID3D11Device* device = Graphics::Instance().GetDevice();
     model = std::make_shared<Model>(device, "Data/Model/Character/PLACEHOLDER_mdl_Block.glb");
-    scale = { 2.0f, 2.0f, 2.0f };
+    scale = { 3.0f, 3.0f, 3.0f };
 
     // 2. Init Animation Controller
     animator = new AnimationController();
@@ -37,9 +37,6 @@ void Player::Update(float elapsedTime, Camera* camera)
 {
     // Simpan referensi camera frame ini
     SetCamera(camera);
-
-    // 1. Logic (State Machine menentukan input apa yang dibaca & state apa selanjutnya)
-    if (stateMachine) stateMachine->Update(this, elapsedTime);
 
     // 2. Physics 
     if (isInputEnabled)

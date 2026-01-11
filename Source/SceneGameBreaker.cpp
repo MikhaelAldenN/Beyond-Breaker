@@ -67,12 +67,17 @@ void SceneGameBreaker::Update(float elapsedTime)
     if (blockManager)
     {
         blockManager->Update(elapsedTime, activeCam);
-
-        if (ball && ball->IsActive())
-        {
-            blockManager->CheckCollision(ball);
-        }
+        if (ball && ball->IsActive()) blockManager->CheckCollision(ball);
     }
+
+    if (GetKeyState('t') & 0x8000)
+    {
+        m_hasTriggeredRotation = false; // Reset lock
+        m_isAnimatingCamera = true;     // Start animation
+        m_animationTimer = 0.0f;        // Reset timer
+    }
+
+    UpdateGameTriggers(elapsedTime);
 
     if (player) player->Update(elapsedTime, activeCam);
 
@@ -142,5 +147,45 @@ void SceneGameBreaker::OnResize(int width, int height)
     if (mainCamera)
     {
         mainCamera->SetAspectRatio((float)width / (float)height);
+    }
+}
+
+//
+
+void SceneGameBreaker::UpdateGameTriggers(float elapsedTime)
+{
+    // Trigger Logic
+    bool triggerCondition = (GetKeyState('T') & 0x8000) // For debug only delete later 
+        ||  (blockManager && blockManager->GetActiveBlockCount() <= 40);
+
+    if (!m_hasTriggeredRotation && triggerCondition)
+    {
+        m_hasTriggeredRotation = true;
+        m_isAnimatingCamera = true;
+        m_animationTimer = 0.0f;
+    }
+
+    // Animation Math
+    if (m_isAnimatingCamera)
+    {
+        m_animationTimer += elapsedTime;
+        float t = m_animationTimer / m_animationDuration;
+
+        if (t >= 1.0f) {
+            t = 1.0f;
+            m_isAnimatingCamera = false;
+        }
+
+        // Smooth Ease-In-Out
+        float smoothT = t * t * (3.0f - 2.0f * t);
+
+        float currentAngle = (smoothT * DirectX::XM_PI);
+
+        // Keeps the pivot precise at center.
+        float radius = 0.01f;
+        float offsetX = sinf(currentAngle) * radius;
+        float offsetZ = cosf(currentAngle) * radius;
+
+        CameraController::Instance().SetTargetOffset({ offsetX, 0.0f, offsetZ });
     }
 }

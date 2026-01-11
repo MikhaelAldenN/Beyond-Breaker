@@ -21,13 +21,13 @@ public:
 
 private:
     DirectX::XMFLOAT3 velocity = { 0, 0, 0 };
-    float speed = 6.0f;             // Speed of the ball
+    float speed = 7.0f;             // Speed of the ball
     float radius = 0.5f;            // Approximate size for collision
 
     // Arena Boundaries 
-    float xLimit = 9.5f;            // Left/Right Walls
-    float zLimitTop = 7.0f;         // Top Wall
-    float zLimitBottom = -6.3f;     // Bottom (Game Over trigger)
+    float xLimit = 8.1f;            // Left/Right Walls
+    float zLimitTop = 6.0f;         // Top Wall
+    float zLimitBottom = -6.0f;     // Bottom (Game Over trigger)
 
     bool isActive = false;
 };

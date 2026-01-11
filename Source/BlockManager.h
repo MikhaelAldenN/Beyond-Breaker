@@ -18,6 +18,8 @@ public:
     void Render(ModelRenderer* renderer);
     void CheckCollision(Ball* ball);
 
+    int GetActiveBlockCount() const;
+
     const std::vector<std::unique_ptr<Block>>& GetBlocks() const { return blocks; }
 
 private:

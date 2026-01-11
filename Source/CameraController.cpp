@@ -2,7 +2,7 @@
 #include "Camera.h"
 #include "System/Input.h" 
 #include <imgui.h>
-#include <cmath> // For sin/cos if needed
+#include <cmath>
 
 using namespace DirectX;
 
@@ -74,8 +74,15 @@ void CameraController::Update(float elapsedTime)
 
     case CameraControlMode::FixedStatic:
     {
+        XMVECTOR vTarget = XMLoadFloat3(&target);
+        XMVECTOR vOffset = XMLoadFloat3(&m_targetOffset);
+        XMVECTOR vFinalTarget = XMVectorAdd(vTarget, vOffset);
+
+        XMFLOAT3 finalTargetPos;
+        XMStoreFloat3(&finalTargetPos, vFinalTarget);
+
         activeCamera->SetPosition(fixedPosition);
-        activeCamera->LookAt(target);
+        activeCamera->LookAt(finalTargetPos);
     }
     break;
 

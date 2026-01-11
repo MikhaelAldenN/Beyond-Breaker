@@ -14,11 +14,11 @@ void BlockManager::Initialize(Player* player)
 {
     blocks.clear();
 
-    int rows = 15;
-    int columns = 25;
+    int rows = 7;
+    int columns = 7;
 
-    float xSpacing = 0.5f;
-    float zSpacing = 0.5f;
+    float xSpacing = 0.7f;
+    float zSpacing = 0.7f;
     float zOffsetWorld = 2.5f;
 
     float startX = -((columns - 1) * xSpacing) / 2.0f;
@@ -121,4 +121,17 @@ void BlockManager::CheckCollision(Ball* ball)
             return;
         }
     }
+}
+
+int BlockManager::GetActiveBlockCount() const
+{
+    int count = 0;
+    for (const auto& block : blocks)
+    {
+        if (block->IsActive())
+        {
+            count++;
+        }
+    }
+    return count;
 }

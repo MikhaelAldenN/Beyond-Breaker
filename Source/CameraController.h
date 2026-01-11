@@ -32,6 +32,7 @@ public:
 
     // Set the target/focus point for the camera (e.g., Player position)
     void SetTarget(const DirectX::XMFLOAT3& target);
+    void SetTargetOffset(const DirectX::XMFLOAT3& offset) { m_targetOffset = offset; }
 
     void SetFixedSetting(const DirectX::XMFLOAT3& value);
 
@@ -70,6 +71,7 @@ private:
     // Fixed Camera settings
     DirectX::XMFLOAT3 fixedPosition = { 0.0f, 15.0f, -10.0f };
 
+    DirectX::XMFLOAT3 m_targetOffset = { 0.0f, 0.0f, 0.0f };
     // UI State
     bool toggleCursor = true;
 };

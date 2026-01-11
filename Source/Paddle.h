@@ -19,5 +19,5 @@ private:
 
     // Settings
     float paddleSpeed = 1.5f;
-    float xLimit = 9.1f;        // How far left/right it can go
+    float xLimit = 7.3f;        // How far left/right it can go
 };
