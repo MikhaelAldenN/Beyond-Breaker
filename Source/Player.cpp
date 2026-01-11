@@ -8,6 +8,8 @@
 #include "AnimationController.h"
 #include "StateMachine.h"
 
+#include <cmath>
+
 using namespace DirectX;
 
 Player::Player()
@@ -45,11 +47,64 @@ void Player::Update(float elapsedTime, Camera* camera)
         movement->Update(elapsedTime);
     }
 
+    // Breakout Logic
+    if (isBreakoutActive)
+    {
+        UpdateBreakoutLogic(elapsedTime);
+    }
+
     // 3. Visuals (Animator hitung pose)
     if (animator) animator->Update(elapsedTime);
 
     // 4. Sync (Physics -> Graphics)
     SyncData();
+}
+
+void Player::SetBreakoutMode(bool enable)
+{
+    isBreakoutActive = enable;
+
+    if (enable)
+    {
+        originalPosition = movement->GetPosition();
+        currentShakeIntensity = 0.0f; 
+    }
+    else
+    {
+        movement->SetPosition(originalPosition);
+    }
+}
+
+void Player::UpdateBreakoutLogic(float elapsedTime)
+{
+    bool isSpaceDown = (GetAsyncKeyState(VK_SPACE) & 0x8000) != 0;
+
+    if (isSpaceDown && !wasSpacePressed)
+    {
+        currentShakeIntensity += breakoutSettings.shakeGain;
+    }
+
+    wasSpacePressed = isSpaceDown;
+
+    currentShakeIntensity -= breakoutSettings.shakeDecay * elapsedTime;
+
+    if (currentShakeIntensity < 0.0f) currentShakeIntensity = 0.0f;
+    if (currentShakeIntensity > breakoutSettings.maxShake) currentShakeIntensity = breakoutSettings.maxShake;
+    if (currentShakeIntensity > 0.0f)
+    {
+        float randX = ((float)(rand() % 100) / 50.0f - 1.0f) * currentShakeIntensity; 
+        float randZ = ((float)(rand() % 100) / 50.0f - 1.0f) * currentShakeIntensity;
+
+        XMFLOAT3 shakePos = originalPosition;
+        shakePos.x += randX;
+        shakePos.z += randZ;
+
+        movement->SetPosition(shakePos);
+    }
+    else
+    {
+        movement->SetPosition(originalPosition);
+    }
 }
 
 // Perbaikan nama fungsi agar sesuai header: HandleMovementInput

@@ -169,7 +169,7 @@ void SceneGameBreaker::UpdateGameTriggers(float elapsedTime)
         m_animationTimer = 0.0f;
     }
 
-    // Animation Math
+    // Animation Logic
     if (m_isAnimatingCamera)
     {
         m_animationTimer += elapsedTime;
@@ -180,6 +180,7 @@ void SceneGameBreaker::UpdateGameTriggers(float elapsedTime)
             m_isAnimatingCamera = false;
 
             if (paddle) paddle->SetAIEnabled(true);
+            if (player) player->SetBreakoutMode(true);
         }
 
         // Smooth Ease-In-Out
