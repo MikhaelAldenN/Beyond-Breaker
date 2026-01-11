@@ -41,7 +41,11 @@ void SceneGameBreaker::Update(float elapsedTime)
     // Update Player & Camera Controller
     Camera* activeCam = CameraController::Instance().GetActiveCamera();
 
-    if (paddle) paddle->Update(elapsedTime, activeCam);
+    if (paddle)
+    {
+        paddle->UpdateAI(elapsedTime, ball);
+        paddle->Update(elapsedTime, activeCam);
+    }
 
     if (ball)
     {
@@ -174,6 +178,8 @@ void SceneGameBreaker::UpdateGameTriggers(float elapsedTime)
         if (t >= 1.0f) {
             t = 1.0f;
             m_isAnimatingCamera = false;
+
+            if (paddle) paddle->SetAIEnabled(true);
         }
 
         // Smooth Ease-In-Out

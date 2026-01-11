@@ -8,15 +8,16 @@ public:
     ~Ball() override;
 
     void Update(float elapsedTime, Camera* camera) override;
-
     void Launch();
-
     void Reset();
+    void SetVelocity(const DirectX::XMFLOAT3& v) { velocity = v; }
+    void SetActive(bool active) { isActive = active; }
 
     CharacterMovement* GetMovement() const { return movement; }
     DirectX::XMFLOAT3 GetVelocity() const { return velocity; }
-    void SetVelocity(const DirectX::XMFLOAT3& v) { velocity = v; }
+
     float GetRadius() const { return radius; }
+
     bool IsActive() const { return isActive; }
 
 private:
@@ -29,5 +30,5 @@ private:
     float zLimitTop = 6.0f;         // Top Wall
     float zLimitBottom = -6.0f;     // Bottom (Game Over trigger)
 
-    bool isActive = false;
+    bool isActive = true;
 };
