@@ -4,6 +4,7 @@
 #include "Scene.h"
 #include "System/Sprite.h" 
 #include "Camera.h"
+#include "imgui.h"
 
 class SceneTitle : public Scene
 {

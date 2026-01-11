@@ -10,6 +10,8 @@
 #include "BitmapFont.h" 
 #include "ResourceManager.h"
 
+// Core application class managing the main loop, window, and scene transitions.
+// Implements the Singleton pattern.
 class Framework
 {
 public:
@@ -18,15 +20,18 @@ public:
 
     static Framework* Instance();
 
-    // --- Core Loop ---
+    // --- Main Loop ---
     void Update(float elapsedTime);
     void Render(float elapsedTime);
-    void ForceUpdateRender(); // Handling for blocking operations (e.g. Resize/Drag)
+
+    // Manually steps the loop. Used during blocking window events (e.g., resizing/dragging).
+    void ForceUpdateRender();
+
+    // Queues a scene switch for the next update cycle.
     void ChangeScene(std::unique_ptr<Scene> newScene);
 
-    // --- Message Handling ---
+    // --- Window & Message Handling ---
     LRESULT CALLBACK HandleMessage(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-
     GameWindow* GetMainWindow() const { return mainWindow.get(); }
 
 private:
