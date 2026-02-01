@@ -93,6 +93,10 @@ SceneGameBeyond::SceneGameBeyond()
             if (m_blockManager) m_blockManager->ClearBlocks();
             if (m_itemManager) m_itemManager->Clear();
             if (m_boss) m_boss->ClearProjectiles();
+            //if (m_player) m_player->SetControlActive(false);
+
+            m_isBossDead = true;
+            m_endSequenceTimer = 0.0f;
 
             // 2. Bersihkan Sub-Windows Tracking
             if (m_windowSystem)
@@ -901,6 +905,17 @@ void SceneGameBeyond::Update(float elapsedTime)
             }
         }
     }
+
+    if (m_isBossDead && !m_cinematicStarted)
+    {
+        m_endSequenceTimer += elapsedTime;
+
+        if (m_endSequenceTimer >= 5.0f)
+        {
+            m_cinematicStarted = true;
+            TriggerEndingCinematic();
+        }
+    }
 }
 
 static void DrawTransformControl(const char* label, DirectX::XMFLOAT3* pos)
@@ -1486,4 +1501,107 @@ void SceneGameBeyond::UpdateProjectileWindows()
             }
         }
     }
+}
+
+void SceneGameBeyond::TriggerEndingCinematic()
+{
+    // =============================================================
+    // STEP 1: PERSIAPAN WINDOW BARU (Sesuai request sebelumnya)
+    // =============================================================
+
+    // Hide Window Lama
+    GameWindow* oldMain = Framework::Instance()->GetMainWindow();
+    if (oldMain && oldMain->GetSDLWindow()) SDL_HideWindow(oldMain->GetSDLWindow());
+
+    // Buat Window Baru
+    GameWindow* newWin = WindowManager::Instance().CreateGameWindow("MISSION ACCOMPLISHED", 1920, 1080);
+    if (newWin && newWin->GetSDLWindow())
+    {
+        SDL_Window* sdlWin = newWin->GetSDLWindow();
+        SDL_SetWindowPosition(sdlWin, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+        SDL_SetWindowBordered(sdlWin, false);
+        SDL_RaiseWindow(sdlWin);
+
+        // PENTING: Attach Main Camera ke Window Baru agar cinematic terlihat
+        newWin->SetCamera(m_mainCamera.get());
+    }
+
+    // =============================================================
+    // STEP 2: CALCULATE CAMERA POINTS (A, B, C)
+    // =============================================================
+
+    // Target Utama: Monitor 2 (Posisinya agak di kanan Boss)
+    XMFLOAT3 targetPos = { 0, 0, 0 };
+    if (m_boss) targetPos = m_boss->GetPartVisualPos("monitor2"); // Pastikan monitor 2 masih ada posisinya walau hidden
+    if (targetPos.y < -500) targetPos = { 5.5f, 0.0f, 4.2f }; // Fallback kalau monitor 2 sudah dilempar ke void
+
+    // Point A: Posisi Kamera Sekarang (Top View Default)
+    XMFLOAT3 posA = m_mainCamera->GetPosition();
+    XMFLOAT3 rotA = m_mainCamera->GetRotation();
+
+    // Point C: Close Up Monitor 2 (Tujuan Akhir)
+    // Kita buat agak offset sedikit biar tidak nempel layar
+    XMFLOAT3 posC = { targetPos.x - 2.0f, targetPos.y + 1.0f, targetPos.z - 4.0f };
+    XMFLOAT3 lookAtC = targetPos; // Lihat ke Monitor 2
+
+    // Point B: Titik Tengah (Bridge)
+    // Kita ambil posisi di antara A dan C, tapi agak zoomed in
+    XMFLOAT3 posB;
+    posB.x = posA.x + (posC.x - posA.x) * 0.4f; // 40% perjalanan ke C
+    posB.y = posA.y + (posC.y - posA.y) * 0.4f;
+    posB.z = posA.z + (posC.z - posA.z) * 0.4f;
+
+    // =============================================================
+    // STEP 3: BUILD SEQUENCE (Using CameraController)
+    // =============================================================
+
+    std::vector<CameraKeyframe> sequence;
+
+    // --- SHOT 1: A -> B (Slow Ease In) ---
+    // Konsep: Zoom in perlahan, membangun tensi
+    CameraKeyframe shot1;
+    shot1.isJumpCut = false; // Start dari posisi sekarang (A)
+    shot1.TargetPosition = posB;
+
+    // Hitung rotasi lookat ke Monitor 2 untuk Shot 1
+    // (Biar kameranya pelan-pelan nengok ke monitor)
+    XMVECTOR vPosB = XMLoadFloat3(&posB);
+    XMVECTOR vTarget = XMLoadFloat3(&targetPos);
+    XMVECTOR vDir = XMVectorSubtract(vTarget, vPosB);
+    vDir = XMVector3Normalize(vDir);
+    float pitch = asinf(-XMVectorGetY(vDir));
+    float yaw = atan2f(XMVectorGetX(vDir), XMVectorGetZ(vDir));
+    shot1.TargetRotation = { XMConvertToDegrees(pitch), XMConvertToDegrees(yaw), 0.0f };
+
+    shot1.Duration = 3.0f; // Pelan (3 detik)
+    shot1.Easing = EasingType::EaseInQuad; // Mulai pelan, makin cepat di akhir (seolah-olah mau nabrak)
+    sequence.push_back(shot1);
+
+    // --- SHOT 2: JUMP CUT ke B (sedikit maju) -> C (Ease Out) ---
+    // Konsep: Tiba-tiba "SNAP" jadi dekat, lalu settle down (Ease Out)
+    CameraKeyframe shot2;
+    shot2.isJumpCut = true; // FORCE JUMP CUT!
+
+    // Start Position untuk Shot 2 (Bisa kita bikin lebih maju dikit dari target Shot 1 biar kerasa "Jump"-nya)
+    XMFLOAT3 posJumpStart = { posB.x + (posC.x - posB.x) * 0.2f, posB.y, posB.z + (posC.z - posB.z) * 0.2f };
+    shot2.StartPosition = posJumpStart;
+    shot2.StartRotation = shot1.TargetRotation; // Rotasi sama
+
+    shot2.TargetPosition = posC;
+
+    // Rotasi akhir (C)
+    XMVECTOR vPosC = XMLoadFloat3(&posC);
+    vDir = XMVectorSubtract(vTarget, vPosC);
+    vDir = XMVector3Normalize(vDir);
+    pitch = asinf(-XMVectorGetY(vDir));
+    yaw = atan2f(XMVectorGetX(vDir), XMVectorGetZ(vDir));
+    shot2.TargetRotation = { XMConvertToDegrees(pitch), XMConvertToDegrees(yaw), 0.0f };
+
+    shot2.Duration = 4.0f; // Durasi settle down
+    shot2.Easing = EasingType::EaseOutCubic; // Cepat di awal (lanjutan momentum), melambat di akhir
+    sequence.push_back(shot2);
+
+    // EKSEKUSI
+    CameraController::Instance().SetControlMode(CameraControlMode::Sequence);
+    CameraController::Instance().PlaySequence(sequence, false); // false = jangan loop
 }

@@ -95,4 +95,10 @@ private:
     std::unique_ptr<CollisionManager> m_collisionManager;
 
     bool m_enableItemWindows = false;
+
+    bool m_isBossDead = false;
+    bool m_cinematicStarted = false;
+    float m_endSequenceTimer = 0.0f;
+
+    void TriggerEndingCinematic();
 };
