@@ -62,11 +62,7 @@ void BossIntroState::Enter(Boss* boss)
 
 void BossIntroState::Update(Boss* boss, float dt)
 {
-    m_timer += dt;
-    if (m_timer >= m_duration)
-    {
-        boss->GetStateMachine()->ChangeState(boss, new BossIdleState());
-    }
+    // Frozen. SceneGameBeyond will call TriggerIdle() manually after shatter.
 }
 
 void BossIntroState::Exit(Boss* boss)

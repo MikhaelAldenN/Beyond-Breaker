@@ -31,8 +31,14 @@ public:
 
     void Update(float dt);
 
+    // [BARU] Activate pooled shatter (show and start physics)
+    void Activate(DirectX::XMFLOAT2 velocity);
+    void CreatePooledWindow();  // [BARU] Create hidden window for pool
+
     [[nodiscard]] bool IsNativeWindow() const { return m_isNativeWindow; }
     [[nodiscard]] bool ShouldDestroy() const { return m_markedForDestroy; }
+    [[nodiscard]] bool IsPooled() const { return m_isPooled; }
+    [[nodiscard]] bool IsActive() const { return m_isActive; }
 
     [[nodiscard]] DirectX::XMFLOAT3 GetVirtualWorldPos() const { return m_virtualWorldPos; }
     [[nodiscard]] DirectX::XMFLOAT2 GetSize() const { return { m_width, m_height }; }
@@ -64,6 +70,8 @@ private:
 
     bool m_isNativeWindow = false;
     bool m_markedForDestroy = false;
+    bool m_isPooled = false;        // [BARU] Flag untuk pooled shatter
+    bool m_isActive = false;        // [BARU] Aktif atau masih nunggu di pool
     DirectX::XMFLOAT3 m_virtualWorldPos;
 
     float m_width = 0.0f;
@@ -91,6 +99,14 @@ public:
     }
 
     void TriggerExplosion(DirectX::XMFLOAT2 centerWorldPos, int count = 8);
+    void TriggerShatter();  // [BARU] Trigger shatter untuk boss damage (spawn di center screen)
+
+    // [BARU] Pool management
+    void InitializeShatterPool(int count = 8);  // Create pooled shatters behind main window
+    void ActivatePooledShatters();               // Activate all pooled shatters
+    void SetMainWindow(GameWindow* mainWin);     // [BARU] Set main window reference
+    void DestroyMainWindow();                    // Destroy main game window
+
     void Update(float dt);
     void Clear();
     [[nodiscard]] const std::vector<std::unique_ptr<WindowShatter>>& GetShatters() const { return m_shatters; }
@@ -100,7 +116,10 @@ private:
     WindowShatterManager() = default;
     ~WindowShatterManager() { Clear(); }
     void SpawnSingleInstance(DirectX::XMFLOAT2 centerPos, int index, int totalCount);
+    void CreatePooledShatter(int index, int totalCount);  // [BARU]
 
 private:
     std::vector<std::unique_ptr<WindowShatter>> m_shatters;
+    bool m_poolInitialized = false;  // [BARU]
+    GameWindow* m_mainWindow = nullptr;  // [BARU] Reference to main window
 };

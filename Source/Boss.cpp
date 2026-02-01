@@ -286,6 +286,69 @@ void Boss::UpdateBackgroundAnim(float dt)
 // RENDER LOGIC
 // =========================================================
 
+
+// =========================================================
+// PRE-SHATTER RENDER  only monitor1 + its screen visible
+// =========================================================
+void Boss::RenderPreShatter(ModelRenderer* renderer, Camera* camera)
+{
+    auto ctx = Graphics::Instance().GetDeviceContext();
+    auto font = ResourceManager::Instance().GetFont("VGA_FONT");
+
+    // 1. Keep terminal1 texture up-to-date so the screen has content
+    if (font)
+    {
+        m_terminal1.RenderToTexture(ctx, font);
+    }
+
+    // 2. Render only the monitor1 body part (with culling)
+    BossPart* mon1 = GetPart("monitor1");
+    if (mon1)
+    {
+        if (camera)
+        {
+            auto pos = mon1->visualPosition;
+            if (!camera->CheckSphere(pos.x + mon1->cullOffset.x,
+                pos.y + mon1->cullOffset.y,
+                pos.z + mon1->cullOffset.z,
+                mon1->cullRadius))
+                return; // Off-screen, skip everything
+        }
+        mon1->Render(renderer);
+    }
+
+    // 3. Render only the monitor1 screen quad (terminal1 texture)
+    if (m_screenQuad1 && mon1)
+    {
+        auto& cfg = m_screen1Config;
+
+        XMMATRIX matMon = XMMatrixScaling(mon1->scale.x, mon1->scale.y, mon1->scale.z) *
+            XMMatrixRotationRollPitchYaw(XMConvertToRadians(mon1->rotation.x),
+                XMConvertToRadians(mon1->rotation.y),
+                XMConvertToRadians(mon1->rotation.z)) *
+            XMMatrixTranslation(mon1->visualPosition.x, mon1->visualPosition.y, mon1->visualPosition.z);
+
+        XMMATRIX matScr = XMMatrixScaling(cfg.scale.x, cfg.scale.y, cfg.scale.z) *
+            XMMatrixRotationRollPitchYaw(XMConvertToRadians(cfg.rotation.x),
+                XMConvertToRadians(cfg.rotation.y),
+                XMConvertToRadians(cfg.rotation.z)) *
+            XMMatrixTranslation(cfg.offset.x, cfg.offset.y, cfg.offset.z);
+
+        XMFLOAT4X4 world;
+        XMStoreFloat4x4(&world, matScr * matMon);
+        m_screenQuad1->UpdateTransform(world);
+
+        auto tex = m_terminal1.GetTexture();
+        if (tex)
+        {
+            for (const auto& mesh : m_screenQuad1->GetMeshes())
+                if (mesh.material) mesh.material->baseMap = tex;
+        }
+
+        renderer->Draw(ShaderId::Basic, m_screenQuad1, XMFLOAT4(0.0f, 1.0f, 1.0f, 1.0f), world);
+    }
+}
+
 void Boss::Render(ModelRenderer* renderer, Camera* camera)
 {
     auto ctx = Graphics::Instance().GetDeviceContext();
@@ -887,6 +950,13 @@ void Boss::SetMonitor1Health(int health)
 // Fungsi helper baru untuk SceneGameBeyond
 void Boss::DamageMonitor1(int amount)
 {
+    // Fire once on very first damage
+    if (!m_firstDamageFired && m_onFirstDamage)
+    {
+        m_firstDamageFired = true;
+        m_onFirstDamage();
+    }
+
     int newHealth = m_monitor1Health - amount;
-    SetMonitor1Health(newHealth); // Panggil Setter biar visual terupdate otomatis
+    SetMonitor1Health(newHealth);
 }

@@ -40,6 +40,10 @@ void WindowShatter::Cleanup()
 void WindowShatter::Update(float dt)
 {
     if (m_markedForDestroy) return;
+
+    // [BARU] Skip update jika masih di pool dan belum diaktifkan
+    if (m_isPooled && !m_isActive) return;
+
     m_timeAlive += dt;
 
     if (!m_isNativeWindow)
@@ -145,6 +149,50 @@ void WindowShatter::TransitionToNativeWindow()
     }
 }
 
+// [BARU] Create pooled window (hidden behind main window)
+void WindowShatter::CreatePooledWindow()
+{
+    m_window = WindowManager::Instance().CreateGameWindow(m_title.c_str(), (int)m_width, (int)m_height);
+
+    if (m_window)
+    {
+        // Set ke belakang main window (priority tinggi = di belakang)
+        m_window->SetPriority(1000);
+
+        // Posisi di center screen tapi di belakang
+        int centerX = m_screenWidth / 2 - (int)(m_width / 2);
+        int centerY = m_screenHeight / 2 - (int)(m_height / 2);
+
+        SDL_SetWindowPosition(m_window->GetSDLWindow(), centerX, centerY);
+        SDL_SetWindowBordered(m_window->GetSDLWindow(), true);
+
+        m_camera = std::make_shared<Camera>();
+        m_camera->SetRotation(90.0f, 0.0f, 0.0f);
+        m_window->SetCamera(m_camera.get());
+
+        m_isNativeWindow = true;
+        m_isPooled = true;
+        m_isActive = false;  // Belum aktif, masih menunggu
+    }
+    else
+    {
+        m_markedForDestroy = true;
+    }
+}
+
+// [BARU] Activate pooled shatter (give it velocity and bring to front)
+void WindowShatter::Activate(DirectX::XMFLOAT2 velocity)
+{
+    if (!m_isPooled || !m_window) return;
+
+    m_isActive = true;
+    m_physics.velocity = velocity;
+
+    // Bring to front
+    m_window->SetPriority(-1);
+    SetWindowPos(m_window->GetHWND(), HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+}
+
 void WindowShatter::EnforceScreenBounds()
 {
     if (!m_window) return;
@@ -184,6 +232,107 @@ void WindowShatterManager::TriggerExplosion(DirectX::XMFLOAT2 centerWorldPos, in
     for (int i = 0; i < count; ++i)
     {
         SpawnSingleInstance(centerWorldPos, i, count);
+    }
+}
+
+// [BARU] TriggerShatter - Activate pooled shatters dan destroy main window
+void WindowShatterManager::TriggerShatter()
+{
+    // Jika pool belum diinisialisasi, fallback ke sistem lama
+    if (!m_poolInitialized)
+    {
+        TriggerExplosion({ 0.0f, 0.0f }, 8);
+        return;
+    }
+
+    // Activate semua pooled shatters
+    ActivatePooledShatters();
+
+    // Destroy main window
+    DestroyMainWindow();
+}
+
+// [BARU] Initialize shatter pool (dipanggil di awal scene)
+void WindowShatterManager::InitializeShatterPool(int count)
+{
+    if (m_poolInitialized) return;
+
+    for (int i = 0; i < count; ++i)
+    {
+        CreatePooledShatter(i, count);
+    }
+
+    m_poolInitialized = true;
+}
+
+// [BARU] Create single pooled shatter
+void WindowShatterManager::CreatePooledShatter(int index, int totalCount)
+{
+    static std::mt19937 gen(std::random_device{}());
+
+    // Size bervariasi
+    int size = static_cast<int>(std::uniform_real_distribution<float>(200.0f, 400.0f)(gen));
+
+    // Unique name
+    char title[64];
+    sprintf_s(title, "Pooled_%u_%d", SDL_GetTicks(), index);
+
+    // Buat shatter dengan posisi dan velocity dummy (akan di-set saat activate)
+    auto shatter = std::make_unique<WindowShatter>(
+        title,
+        DirectX::XMFLOAT2{ 0.0f, 0.0f },  // Dummy pos
+        DirectX::XMFLOAT2{ 0.0f, 0.0f },  // Dummy velocity
+        size,
+        1000  // High priority = di belakang
+    );
+
+    // Create window langsung (pooled mode)
+    shatter->CreatePooledWindow();
+
+    m_shatters.push_back(std::move(shatter));
+}
+
+// [BARU] Activate all pooled shatters
+void WindowShatterManager::ActivatePooledShatters()
+{
+    static std::mt19937 gen(std::random_device{}());
+    int totalCount = static_cast<int>(m_shatters.size());
+
+    for (int i = 0; i < totalCount; ++i)
+    {
+        auto& shatter = m_shatters[i];
+        if (!shatter->IsPooled()) continue;
+
+        // Calculate velocity (radial explosion)
+        float angleStep = 360.0f / totalCount;
+        std::uniform_real_distribution<float> jitterAngle(-10.0f, 10.0f);
+        float angleRad = DirectX::XMConvertToRadians((i * angleStep) + jitterAngle(gen));
+
+        std::uniform_real_distribution<float> speedDist(4000.0f, 5000.0f);
+        float speed = speedDist(gen);
+
+        DirectX::XMFLOAT2 velocity = {
+            cosf(angleRad) * speed,
+            sinf(angleRad) * speed
+        };
+
+        shatter->Activate(velocity);
+    }
+}
+
+// [BARU] Set main window reference
+void WindowShatterManager::SetMainWindow(GameWindow* mainWin)
+{
+    m_mainWindow = mainWin;
+}
+
+// [BARU] Destroy main game window
+void WindowShatterManager::DestroyMainWindow()
+{
+    if (m_mainWindow)
+    {
+        WindowManager::Instance().DestroyWindow(m_mainWindow);
+        m_mainWindow = nullptr;
     }
 }
 

@@ -3,6 +3,7 @@
 #include <DirectXMath.h>
 #include <memory>
 #include <string>
+#include <functional>
 #include <vector>
 #include <unordered_map>
 
@@ -124,6 +125,7 @@ public:
 
     void Update(float dt);
     void Render(ModelRenderer* renderer, Camera* camera = nullptr);
+    void RenderPreShatter(ModelRenderer* renderer, Camera* camera = nullptr); // Only monitor1 + screen before shatter
     void DrawDebugGUI();
 
     // --- Part System ---
@@ -231,6 +233,12 @@ public:
     // Hapus implementasi fungsi di header jika ada (pindahkan ke .cpp biar rapi)
     void SetMonitor1Health(int health);
     void DamageMonitor1(int amount); // Tambahkan helper baru ini
+
+    // Callback: fires once on the very first damage to monitor1
+    void SetOnFirstDamageCallback(std::function<void()> cb) { m_onFirstDamage = std::move(cb); }
+private:
+    std::function<void()> m_onFirstDamage;
+    bool m_firstDamageFired = false;
 
 private:
     void InitializeParts();

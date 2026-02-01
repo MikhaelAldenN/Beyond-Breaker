@@ -1208,7 +1208,7 @@ void CollisionManager::CheckBossMonitor1VsPlayer()
     {
         if (m_monitor1HitCooldown <= 0.0f)
         {
-            m_boss->SetMonitor1Health(m_boss->GetMonitor1Health() - 1);
+            m_boss->DamageMonitor1(1);  // Triggers first damage callback automatically
             m_monitor1HitCooldown = MONITOR1_HIT_COOLDOWN;
 
             TerminalMonitor1* terminal = m_boss->GetMonitor1();
@@ -1279,7 +1279,7 @@ void CollisionManager::CheckBossMonitor1VsBlocks()
         {
             if (m_monitor1HitCooldown <= 0.0f)
             {
-                m_boss->SetMonitor1Health(m_boss->GetMonitor1Health() - 1);
+                m_boss->DamageMonitor1(1);  // Triggers first damage callback automatically
                 m_monitor1HitCooldown = MONITOR1_HIT_COOLDOWN;
 
                 TerminalMonitor1* terminal = m_boss->GetMonitor1();
@@ -1356,7 +1356,7 @@ void CollisionManager::CheckBossMonitor1VsBlockProjectiles()
         {
             if (m_monitor1HitCooldown <= 0.0f)
             {
-                m_boss->SetMonitor1Health(m_boss->GetMonitor1Health() - 1);
+                m_boss->DamageMonitor1(1);  // Triggers first damage callback automatically
                 m_monitor1HitCooldown = MONITOR1_HIT_COOLDOWN;
 
                 TerminalMonitor1* terminal = m_boss->GetMonitor1();

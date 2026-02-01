@@ -67,6 +67,24 @@ SceneGameBeyond::SceneGameBeyond()
     if (m_boss && m_player)
     {
         m_boss->SetPlayer(m_player.get());
+
+        // [BARU] Trigger window shatter on first boss damage
+        m_boss->SetOnFirstDamageCallback([this]() {
+            if (!m_shatterTriggered)
+            {
+                m_shatterTriggered = true;
+                m_gameStarted = true;
+
+                // Trigger window shatter effect
+                WindowShatterManager::Instance().TriggerShatter();
+
+                // [BARU] Start boss AI - transition from Intro to Idle state
+                m_boss->TriggerIdle();
+
+                // Log untuk debugging
+                m_boss->AddTerminalLog(">> BATTLE START <<");
+            }
+            });
     }
 
     m_enemyManager = std::make_unique<EnemyManager>();
@@ -113,6 +131,19 @@ SceneGameBeyond::SceneGameBeyond()
             WindowShatterManager::Instance().TriggerExplosion({ pPos.x, pPos.z }, 4);
         }
         });
+
+    // =========================================================
+    // [BARU] INITIALIZE SHATTER POOL
+    // Create pooled shatter windows di belakang main window
+    // =========================================================
+    WindowShatterManager::Instance().InitializeShatterPool(8);
+
+    // Set reference ke main window untuk destroy nanti
+    GameWindow* mainWin = Framework::Instance()->GetMainWindow();
+    if (mainWin)
+    {
+        WindowShatterManager::Instance().SetMainWindow(mainWin);
+    }
 }
 
 // =========================================================
@@ -488,47 +519,10 @@ void SceneGameBeyond::UpdateItemWindows()
 // =========================================================
 void SceneGameBeyond::Update(float elapsedTime)
 {
-    // 1. Wait for Enter to start
-    if (!m_gameStarted)
-    {
-        if (Input::Instance().GetKeyboard().IsTriggered(VK_RETURN))
-        {
-            GameWindow* mainWin = Framework::Instance()->GetMainWindow();
-            if (mainWin)
-            {
-                // Trigger efek pecah kaca
-                if (m_player)
-                {
-                    auto pPos = m_player->GetPosition();
-                    WindowShatterManager::Instance().TriggerExplosion({ pPos.x, pPos.z }, 8);
-                }
-
-                // --- UBAH WINDOW MENJADI DEBUG CONSOLE ---
-                SDL_Window* sdlWin = mainWin->GetSDLWindow(); // Pastikan GameWindow punya getter ini
-
-                if (sdlWin)
-                {
-                    // 1. Title & Posisi
-                    SDL_SetWindowTitle(sdlWin, "DEBUG CONSOLE");
-                    SDL_SetWindowSize(sdlWin, 450, 600);
-                    SDL_SetWindowPosition(sdlWin, 20, 20);
-
-                    // 2. [FIX] NYALAKAN BORDER (TITLE BAR) AGAR BISA DIGESER
-                    SDL_SetWindowBordered(sdlWin, true);
-
-                    // 3. (Opsional) Biar bisa di-resize manual pakai mouse
-                    SDL_SetWindowResizable(sdlWin, true);
-                }
-            }
-            m_gameStarted = true;
-            m_shatterTriggered = true;
-        }
-    }
-
+    m_startupTimer += elapsedTime;
     // 2. Deferred window initialization
     if (!m_isWindowsInitialized)
     {
-        m_startupTimer += elapsedTime;
         if (m_startupTimer > DEFERRED_INIT_TIME)
         {
             InitializeSubWindows();
@@ -544,6 +538,14 @@ void SceneGameBeyond::Update(float elapsedTime)
 
     DirectX::XMFLOAT3 mousePos = GetMouseOnGround(activeCam);
 
+
+    // One-time: force spawn position before first Update overwrites it
+    static bool s_playerSpawnApplied = false;
+    if (!s_playerSpawnApplied && m_player)
+    {
+        m_player->SetPosition(0.0f, 0.0f, -8.0f);
+        s_playerSpawnApplied = true;
+    }
     if (m_player)
     {
         m_player->Update(elapsedTime, activeCam);
@@ -567,6 +569,93 @@ void SceneGameBeyond::Update(float elapsedTime)
         m_player->SetPosition(pos.x, pos.y, pos.z);
 
         if (m_subCamera) m_subCamera->LookAt(m_player->GetPosition());
+    }
+
+    // 1. Pre-shatter: detect first hit on monitor1 (block OR projectile) -> trigger shatter
+    // Gated behind m_startupTimer so positions are valid before we start checking.
+    if (!m_gameStarted && m_boss && m_blockManager && m_startupTimer > 1.5f)
+    {
+        BossPart* mon1 = m_boss->GetPart("monitor1");
+        if (mon1)
+        {
+            XMFLOAT3 mPos = mon1->visualPosition;
+            const float hitRadius = 2.5f;
+            bool hit = false;
+
+            // --- A. Check shield/formation blocks (non-projectile only) ---
+            for (const auto& block : m_blockManager->GetBlocks())
+            {
+                if (!block || !block->IsActive() || block->IsProjectile()) continue;
+
+                XMFLOAT3 bPos = block->GetMovement()->GetPosition();
+                float dx = bPos.x - mPos.x;
+                float dy = bPos.y - mPos.y;
+                float dz = bPos.z - mPos.z;
+
+                if ((dx * dx + dy * dy + dz * dz) < hitRadius * hitRadius)
+                {
+                    hit = true;
+                    break;
+                }
+            }
+
+            // --- B. Check shot projectiles (the blocks with IsProjectile == true) ---
+            if (!hit)
+            {
+                for (const auto& block : m_blockManager->GetBlocks())
+                {
+                    if (!block || !block->IsActive() || !block->IsProjectile()) continue;
+
+                    XMFLOAT3 bPos = block->GetMovement()->GetPosition();
+                    float dx = bPos.x - mPos.x;
+                    float dy = bPos.y - mPos.y;
+                    float dz = bPos.z - mPos.z;
+
+                    if ((dx * dx + dy * dy + dz * dz) < hitRadius * hitRadius)
+                    {
+                        hit = true;
+                        break;
+                    }
+                }
+            }
+
+            // --- C. On hit: shatter + SDL resize + wake boss ---
+            if (hit)
+            {
+                WindowShatterManager::Instance().TriggerExplosion({ mPos.x, mPos.z }, 8);
+
+                GameWindow* mainWin = Framework::Instance()->GetMainWindow();
+                if (mainWin)
+                {
+                    SDL_Window* sdlWin = mainWin->GetSDLWindow();
+                    if (sdlWin)
+                    {
+                        SDL_SetWindowTitle(sdlWin, "DEBUG CONSOLE");
+                        SDL_SetWindowSize(sdlWin, 450, 600);
+                        SDL_SetWindowPosition(sdlWin, 20, 20);
+                        SDL_SetWindowBordered(sdlWin, true);
+                        SDL_SetWindowResizable(sdlWin, true);
+                    }
+                }
+
+                m_gameStarted = true;
+                m_shatterTriggered = true;
+                m_boss->TriggerIdle();
+
+                OutputDebugStringA("SHATTER TRIGGERED: hit monitor1!\n");
+            }
+        }
+    }
+
+    // 1b. Pre-shatter: keep main window on top of all sub-windows while fullscreen
+    if (!m_gameStarted)
+    {
+        GameWindow* mainWin = Framework::Instance()->GetMainWindow();
+        if (mainWin)
+        {
+            SDL_Window* sdlWin = mainWin->GetSDLWindow();
+            if (sdlWin) SDL_RaiseWindow(sdlWin);
+        }
     }
 
     // --- INTEGRASI SHOOT & SHIELD ---
@@ -1088,18 +1177,9 @@ void SceneGameBeyond::Render(float elapsedTime, Camera* camera)
     dc->OMSetDepthStencilState(rs->GetDepthStencilState(DepthState::TestAndWrite), 0);
     dc->RSSetState(rs->GetRasterizerState(RasterizerState::SolidCullBack));
 
-    if (!m_gameStarted && targetCam == m_mainCamera.get())
-    {
-        D3D11_VIEWPORT vp;
-        UINT num = 1;
-        dc->RSGetViewports(&num, &vp);
-        m_primitive2D->Rect(0.0f, 0.0f, vp.Width, vp.Height, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
-        m_primitive2D->Render(dc);
-        dc->OMSetDepthStencilState(rs->GetDepthStencilState(DepthState::TestAndWrite), 0);
-    }
+    // Pre-shatter: Player, Blocks, and Monitor1 are visible (no black overlay).
 
     RenderScene(elapsedTime, targetCam);
-
     if (targetCam == m_mainCamera.get())
     {
         Graphics::Instance().GetShapeRenderer()->Render(dc, targetCam->GetView(), targetCam->GetProjection());
@@ -1125,12 +1205,20 @@ void SceneGameBeyond::RenderScene(float elapsedTime, Camera* camera)
         }
     }
 
-    // --- 2. RENDER BOSS (CULLING INTERNAL) ---
-    if (m_boss && m_gameStarted)
+    // --- 2. RENDER BOSS ---
+    if (m_boss)
     {
-        // Boss sudah punya logic culling di dalamnya (Langkah 2)
-        m_boss->Render(modelRenderer, camera);
+        if (m_gameStarted)
+            m_boss->Render(modelRenderer, camera);       // Full boss after shatter
+        else
+            m_boss->RenderPreShatter(modelRenderer, camera); // Only monitor1 before shatter
     }
+
+
+
+
+
+
 
     // --- 3. RENDER ENEMY (CULLING) ---
     if (m_enemyManager && m_gameStarted)
@@ -1140,7 +1228,7 @@ void SceneGameBeyond::RenderScene(float elapsedTime, Camera* camera)
     }
 
     // --- 4. RENDER BLOCKS (CULLING) ---
-    if (m_blockManager && m_gameStarted)
+    if (m_blockManager)
     {
         for (const auto& block : m_blockManager->GetBlocks())
         {
