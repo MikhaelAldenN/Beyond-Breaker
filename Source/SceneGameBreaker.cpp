@@ -59,11 +59,27 @@ SceneGameBreaker::SceneGameBreaker()
     m_collisionManager = std::make_unique<CollisionManager>();
     m_collisionManager->Initialize(player, m_stage.get(), blockManager.get(), m_enemyManager.get(), m_itemManager.get());
 
-    m_collisionManager->SetOnPlayerDeathCallback([this](){ LoadCheckpoint(); });
+    m_collisionManager->SetOnPlayerDeathCallback([this]() {
+        AudioManager::Instance().PlaySFX("Data/Sound/SE_Explosion.wav", 0.4f);
+        StartPlayerDeathSequence();
+        });
+    m_collisionManager->SetOnPlayerHitCallback([this]() {
+        AudioManager::Instance().PlaySFX("Data/Sound/SE_Explosion.wav", 0.4f);
+        });
     m_collisionManager->SetOnCheckpointReachCallback([this](DirectX::XMFLOAT3 pos){ SaveCheckpoint(pos); });
+    m_collisionManager->SetOnLevelCompleteCallback([this]() { StartLevelTransition(); });
+
     // Callback untuk Shake saat blok hancur
     blockManager->SetOnBlockHitCallback([this]()
         {
+            if (!m_hasTriggered)
+            {
+                AudioManager::Instance().PlaySFX("Data/Sound/SE_Tap.wav", 0.4f);
+            }
+            else if (m_introFinished)
+            {
+                AudioManager::Instance().PlaySFX("Data/Sound/SE_Explosion.wav", 0.4f);
+            }
             if (m_isShakeEnabled)
             {
                 ShakeSettings hitShake;
@@ -291,7 +307,16 @@ void SceneGameBreaker::Update(float elapsedTime)
             ball->GetMovement()->SetPosition(padPos);
         }
         ball->Update(elapsedTime, activeCam);
-        if (paddle && ball->IsActive()) paddle->CheckCollision(ball);
+        if (paddle && ball->IsActive())
+        {
+            if (paddle->CheckCollision(ball)) 
+            {
+                if (!m_hasTriggered)
+                {
+                    AudioManager::Instance().PlaySFX("Data/Sound/SE_Tap.wav", 0.4f);
+                }
+            }
+        }
         if (player && player->GetGameStage() >= 2)
         {
             DirectX::XMFLOAT3 bPos = ball->GetMovement()->GetPosition();
@@ -325,7 +350,8 @@ void SceneGameBreaker::Update(float elapsedTime)
         if (!s_hasEnabledMashing)
         {
             s_hasEnabledMashing = true;
-            player->SetBreakoutMode(true); 
+            player->SetBreakoutMode(true);
+            AudioManager::Instance().PlayMusic("Data/Sound/BGM_GameBreaker.wav", true);
         }
     }
 
@@ -449,23 +475,64 @@ void SceneGameBreaker::Update(float elapsedTime)
         const float baseSmoothness = 0.2f;
         const float baseIntensity = 0.38f;
         // Target Values (Pitch Black)
-        const float targetSmoothness = 4.0f;
+        const float targetSmoothness = 7.0f;
         const float targetIntensity = 5.0f;
 
-        // PRIORITY 1: Handle Respawn Fade-In (Recovering from Black)
-        if (m_respawnTimer > 0.0f)
+        if (m_isTransitioning)
+        {
+            m_transitionTimer += elapsedTime;
+
+            float t = std::clamp(m_transitionTimer / TRANSITION_DURATION, 0.0f, 1.0f);
+
+            uberParams.smoothness = baseSmoothness + (targetSmoothness - baseSmoothness) * t;
+            uberParams.intensity = baseIntensity + (targetIntensity - baseIntensity) * t;
+
+            if (m_transitionTimer >= TRANSITION_DURATION)
+            {
+                Framework::Instance()->ChangeScene(std::make_unique<SceneGameBeyond>());
+            }
+        }
+
+        // --- DEATH SEQUENCE LOGIC ---
+        else if (m_isDying)
+        {
+            m_deathTimer += elapsedTime;
+
+            // Phase 1: Wait 0.5s (Player is invisible)
+            if (m_deathTimer < DEATH_DELAY_DURATION)
+            {
+                uberParams.smoothness = baseSmoothness;
+                uberParams.intensity = baseIntensity;
+            }
+            // Phase 2: Fade Out over 3.0s
+            else
+            {
+                float fadeTime = m_deathTimer - DEATH_DELAY_DURATION;
+                float t = std::clamp(fadeTime / DEATH_FADE_DURATION, 0.0f, 1.0f);
+
+                // Fade Vignette to Black
+                uberParams.smoothness = baseSmoothness + (targetSmoothness - baseSmoothness) * t;
+                uberParams.intensity = baseIntensity + (targetIntensity - baseIntensity) * t;
+
+                // Phase 3: Finish -> Respawn
+                if (t >= 1.0f)
+                {
+                    LoadCheckpoint();
+                    // Keep screen black for one frame to match respawn start
+                    uberParams.smoothness = targetSmoothness;
+                    uberParams.intensity = targetIntensity;
+                }
+            }
+        }
+
+        // --- RESPAWN FADE IN ---
+        else if (m_respawnTimer > 0.0f)
         {
             m_respawnTimer -= elapsedTime;
 
-            // 1. Calculate Linear Progress (1.0 -> 0.0)
             float linearT = std::clamp(m_respawnTimer / RESPAWN_FADE_DURATION, 0.0f, 1.0f);
-
-            // 2. [FIX] Apply Easing (Quadratic In)
-            // Squaring 't' makes the value approach 0.0 (Normal State) much slower at the end.
-            // Effect: Fast opening at start -> Very slow, soft finish at the corners.
             float t = linearT * linearT;
 
-            // Interpolate Backwards: Black -> Normal
             uberParams.smoothness = baseSmoothness + (targetSmoothness - baseSmoothness) * t;
             uberParams.intensity = baseIntensity + (targetIntensity - baseIntensity) * t;
         }
@@ -590,6 +657,7 @@ void SceneGameBreaker::UpdateGameTriggers(float elapsedTime)
         if (paddle) paddle->SetAIEnabled(true);
 
         m_director->TriggerIntroSequence();
+        AudioManager::Instance().FadeOutMusic(3.0f);
     }
 }
 
@@ -920,6 +988,26 @@ void SceneGameBreaker::SaveCheckpoint(const DirectX::XMFLOAT3& checkpointPos)
     }
 }
 
+void SceneGameBreaker::StartLevelTransition()
+{
+    if (m_isTransitioning) return;
+    m_isTransitioning = true;
+    m_transitionTimer = 0.0f;
+}
+
+void SceneGameBreaker::StartPlayerDeathSequence()
+{
+    if (m_isDying) return;
+    m_isDying = true;
+    m_deathTimer = 0.0f;
+
+    if (player)
+    {
+        player->SetInputEnabled(false);
+        player->scale = { 0.0f, 0.0f, 0.0f };
+    }
+}
+
 void SceneGameBreaker::LoadCheckpoint()
 {
     if (!m_checkpoint.isValid)
@@ -938,6 +1026,7 @@ void SceneGameBreaker::LoadCheckpoint()
         player->GetMovement()->SetRotationY(DirectX::XM_PI);
         player->SetAbilityShield(m_checkpoint.savedCanShield);
         player->SetAbilityShoot(m_checkpoint.savedCanShoot);
+        player->scale = { 3.0f, 3.0f, 3.0f };
     }
 
     if (m_enemyManager)
@@ -964,11 +1053,18 @@ void SceneGameBreaker::LoadCheckpoint()
     m_mashSequenceActive = false;
     m_showSubText = false;
     m_mashLoopCount = 0;
+
+    // Reset Flags
+    m_isDying = false;
+    m_deathTimer = 0.0f;
+
+    // Start Fade-In 
+    m_respawnTimer = RESPAWN_FADE_DURATION;
 }
 
 void SceneGameBreaker::DrawGUI()
 {
-    GameBreakerGUI::Draw(this);
+    //GameBreakerGUI::Draw(this);
 }
 
 void SceneGameBreaker::OnResize(int width, int height)

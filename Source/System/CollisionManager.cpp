@@ -252,7 +252,6 @@ void CollisionManager::CheckEnemyProjectilesFull(float elapsedTime)
 
             XMFLOAT3 currentPos = ball->GetMovement()->GetPosition();
             XMFLOAT3 currentVel = ball->GetVelocity();
-
             XMVECTOR vPos = XMLoadFloat3(&currentPos);
             XMVECTOR vVel = XMLoadFloat3(&currentVel);
             XMVECTOR vNextPos = vPos + (vVel * elapsedTime);
@@ -272,7 +271,6 @@ void CollisionManager::CheckEnemyProjectilesFull(float elapsedTime)
                 {
                     float dx = currentPos.x - wall.Position.x;
                     float dz = currentPos.z - wall.Position.z;
-
                     float wallMax = (std::max)(wall.Scale.x, wall.Scale.z);
                     if ((dx * dx + dz * dz) > pow(wallMax + frameDist + 10.0f, 2)) continue;
 
@@ -297,26 +295,52 @@ void CollisionManager::CheckEnemyProjectilesFull(float elapsedTime)
 
                 float safeDist = (std::max)(0.0f, closestT - 0.01f);
                 XMVECTOR vSafePos = vPos + (vDir * safeDist);
-
                 XMVECTOR vReflectedVel = XMVector3Reflect(vVel, hitNormal);
-
                 float remainingDist = frameDist - closestT;
                 vSafePos += (XMVector3Normalize(vReflectedVel) * remainingDist);
-
                 vSafePos += hitNormal * 0.05f;
 
                 XMFLOAT3 finalPos, finalVel;
                 XMStoreFloat3(&finalPos, vSafePos);
                 XMStoreFloat3(&finalVel, vReflectedVel);
-
-                finalPos.y = 0.0f;
-                finalVel.y = 0.0f;
+                finalPos.y = 0.0f; finalVel.y = 0.0f;
 
                 ball->ApplyMovement(finalPos, finalVel);
                 ball->UpdatePreviousPosition();
-
                 ++it;
                 continue;
+            }
+
+            bool hitPlayer = false;
+
+            if (m_player && !m_player->IsInvincible())
+            {
+                DirectX::XMFLOAT3 ballPos = ball->GetMovement()->GetPosition();
+
+                float playerHalfSize = 0.3f; // Matches BlockManager
+                float maxRange = playerHalfSize + ballRadius;
+
+                DirectX::XMFLOAT3 playerPos = m_player->GetMovement()->GetPosition();
+
+                float dx = ballPos.x - playerPos.x;
+                float dz = ballPos.z - playerPos.z;
+                float distSq = dx * dx + dz * dz;
+                float searchRangeSq = (maxRange * 2.0f) * (maxRange * 2.0f);
+
+                if (distSq <= searchRangeSq)
+                {
+                    float absX = std::abs(dx);
+                    float absZ = std::abs(dz);
+
+                    if (absX < maxRange && absZ < maxRange)
+                    {
+                        if (m_onPlayerDeathCallback) m_onPlayerDeathCallback();
+
+                        it = projectiles.erase(it);
+
+                        continue;
+                    }
+                }
             }
 
             XMFLOAT3 nextPosFloat;
@@ -704,7 +728,15 @@ void CollisionManager::CheckBlockVsEnemies()
 
             if (distSq < (combinedRadius * combinedRadius))
             {
-                block.OnHit();
+                bool isPaddle = (enemy->GetType() == EnemyType::Paddle);
+                bool isInvincible = (m_blockManager && m_blockManager->IsInvincible());
+
+                if (isInvincible && isPaddle) { }
+                else
+                {
+                    block.OnHit();
+                    if (m_blockManager) m_blockManager->TriggerBlockBreakParams();
+                }
 
                 if (m_blockManager) m_blockManager->TriggerBlockBreakParams();
 
@@ -754,6 +786,7 @@ void CollisionManager::CheckBlockVsItems()
 
             if (distSq < combinedRadius * combinedRadius)
             {
+                AudioManager::Instance().PlaySFX("Data/Sound/SE_Pop.wav", 0.4f);
                 if (item->GetType() == ItemType::Heal) {
                     if (m_blockManager) m_blockManager->AddBlockFromItem(iPos);
                 }
@@ -857,15 +890,12 @@ void CollisionManager::CheckPlayerVsEnemies()
                 continue;
             }
 
-            if (m_onPlayerHitCallback) m_onPlayerHitCallback();
+            if (m_onPlayerDeathCallback) m_onPlayerDeathCallback();
 
             if (m_itemManager && (enemy->GetType() == EnemyType::Paddle || enemy->GetType() == EnemyType::Pentagon)) {
                 m_itemManager->SpawnHealClusterAt(enemyPos, 3);
             }
             it = enemies.erase(it);
-
-            m_player->SetInputEnabled(false);
-            m_player->GetMovement()->SetPosition({ 0, -1000, 0 });
         }
         else
         {
@@ -944,6 +974,7 @@ void CollisionManager::CheckPlayerVsTriggerLines()
             else if (i == 2)
             {
                 m_player->SetAbilityShield(true);
+                if (m_onLevelCompleteCallback) m_onLevelCompleteCallback();
             }
         }
     }
@@ -975,7 +1006,6 @@ void CollisionManager::CheckPlayerVsVoidLines()
 void CollisionManager::CheckBlockVsVoidLines()
 {
     if (!m_blockManager || !m_stage) return;
-    if (m_blockManager->IsShieldActive()) return;
 
     const float BLOCK_RADIUS = 0.5f;
     const float FALL_THRESHOLD = 0.1f;
@@ -1040,6 +1070,7 @@ void CollisionManager::CheckPlayerVsItems()
         {
             // COLLISION TERJADI!
 
+            AudioManager::Instance().PlaySFX("Data/Sound/SE_Pop.wav", 0.4f);
             // 1. Efek Item
             if (item->GetType() == ItemType::Heal)
             {

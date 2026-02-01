@@ -7,10 +7,13 @@
 #include <wrl/client.h> 
 
 // Game Systems
+#include "Framework.h"
 #include "Scene.h"
+#include "SceneGameBeyond.h"
 #include "GameWindow.h"
 #include "CameraController.h"
 #include "UberShader.h"
+#include "System/AudioManager.h"
 #include "System/Sprite.h"
 #include "System/Light.h"
 #include "System/Collision.h"
@@ -146,6 +149,23 @@ private:
 
     void SaveCheckpoint(const DirectX::XMFLOAT3& checkpointPos);
     void LoadCheckpoint();
+
+    // --- DEATH ANIMATION STATE ---
+    bool m_isDying = false;       
+    float m_deathTimer = 0.0f;    
+
+    const float DEATH_DELAY_DURATION = 0.5f; 
+    const float DEATH_FADE_DURATION = 3.0f;  
+
+    // Helper function
+    void StartPlayerDeathSequence();
+
+    // Transition State
+    bool m_isTransitioning = false;
+    float m_transitionTimer = 0.0f;
+    const float TRANSITION_DURATION = 10.0f; 
+
+    void StartLevelTransition();
 
     // Camera Settings
     DirectX::XMFLOAT3 cameraPosition = { 0.0f, 18.0f, 0.0f };

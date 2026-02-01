@@ -5,6 +5,7 @@
 #include <DirectXMath.h>
 #include <functional>
 #include <vector>
+#include "System/AudioManager.h"
 #include "System/Collision.h"
 #include "Enemy.h"
 #include "Player.h"
@@ -29,6 +30,7 @@ public:
 
     void Update(float elapsedTime);
     void SetOnCheckpointReachCallback(std::function<void(DirectX::XMFLOAT3)> callback) { m_onCheckpointReachCallback = callback; }
+    void SetOnLevelCompleteCallback(std::function<void()> callback) { m_onLevelCompleteCallback = callback; }
     void SetOnPlayerDeathCallback(std::function<void()> callback) { m_onPlayerDeathCallback = callback; }
     void SetOnPlayerHitCallback(std::function<void()> callback) { m_onPlayerHitCallback = callback; }
 
@@ -64,6 +66,8 @@ private:
     ItemManager* m_itemManager = nullptr;
     SpatialHashGrid m_blockGrid;
 
+    std::function<void(DirectX::XMFLOAT3)> m_onCheckpointReachCallback;
+    std::function<void()> m_onLevelCompleteCallback = nullptr;
     std::function<void()> m_onPlayerDeathCallback;
     std::function<void()> m_onPlayerHitCallback = nullptr;
     std::function<void(DirectX::XMFLOAT3)> m_onCheckpointReachCallback;

@@ -8,6 +8,7 @@
 #include "System/Graphics.h"
 #include "System/ImGuiRenderer.h"
 #include "System/Input.h"
+#include "System/AudioManager.h"
 #include "WindowManager.h"
 #include "SceneGame.h"
 #include "SceneTitle.h"
@@ -22,6 +23,8 @@ Framework::Framework()
 {
     pInstance = this;
     Graphics::Instance().Initialize();
+
+    if (!AudioManager::Instance().Initialize()) {  }
 
     // 1. Buat Main Window (Fullscreen Borderless)
     auto mainWin = WindowManager::Instance().CreateGameWindow("Main Game Window", 1920, 1080);
@@ -55,7 +58,7 @@ Framework::Framework()
     ResourceManager::Instance().LoadFont("VGA_FONT", "Data/Font/IBM_VGA_32px_0.png", "Data/Font/IBM_VGA_32px.fnt");
 
     // Init Scene
-    scene = std::make_unique<SceneGameBeyond>();
+    scene = std::make_unique<SceneIntroBios>();
 }
 
 Framework::~Framework()
@@ -93,6 +96,8 @@ void Framework::Update(float elapsedTime)
 
     CalculateFrameStats(elapsedTime);
     Input::Instance().Update();
+    AudioManager::Instance().Update(elapsedTime);
+
     ImGuiRenderer::NewFrame();
 
     if (scene) scene->Update(elapsedTime);
@@ -137,6 +142,15 @@ void Framework::CalculateFrameStats(float dt)
         frames = 0;
         timeAccumulator -= 1.0f;
     }
+}
+
+void Framework::Quit()
+{
+    PostQuitMessage(0);
+    SDL_Event quitEvent;
+    SDL_zero(quitEvent);
+    quitEvent.type = SDL_EVENT_QUIT;
+    SDL_PushEvent(&quitEvent);
 }
 
 LRESULT CALLBACK Framework::HandleMessage(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)

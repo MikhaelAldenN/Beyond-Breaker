@@ -28,6 +28,8 @@ SceneIntroBios::SceneIntroBios()
     // Initialize UberShader & Render Targets
     uberShader = std::make_unique<UberShader>(Graphics::Instance().GetDevice());
     CreateRenderTarget();     
+
+    AudioManager::Instance().PlayMusic("Data/Sound/BGM_Intro.wav", true, 6.0f);
 }
 
 void SceneIntroBios::SetupBiosLog()
@@ -241,20 +243,20 @@ void SceneIntroBios::OnResize(int width, int height)
 
 void SceneIntroBios::DrawGUI() 
 {
-    ImGui::SetNextWindowSize(ImVec2(400, 600), ImGuiCond_FirstUseEver);
-    if (ImGui::Begin("Bios Inspector", nullptr))
-    {
-        if (ImGui::BeginTabBar("InspectorTabs"))
-        {
-            if (ImGui::BeginTabItem("Post-Process & FX"))
-            {
-                GUIPostProcessTab();
-                ImGui::EndTabItem();
-            }
-            ImGui::EndTabBar();
-        }
-    }
-    ImGui::End();
+    //ImGui::SetNextWindowSize(ImVec2(400, 600), ImGuiCond_FirstUseEver);
+    //if (ImGui::Begin("Bios Inspector", nullptr))
+    //{
+    //    if (ImGui::BeginTabBar("InspectorTabs"))
+    //    {
+    //        if (ImGui::BeginTabItem("Post-Process & FX"))
+    //        {
+    //            GUIPostProcessTab();
+    //            ImGui::EndTabItem();
+    //        }
+    //        ImGui::EndTabBar();
+    //    }
+    //}
+    //ImGui::End();
 }
 
 void SceneIntroBios::GUIPostProcessTab()
