@@ -155,27 +155,29 @@ void BossIdleState::Update(Boss* boss, float dt)
         // Hitung jarak player ke center (0, 0, 0)  proxy untuk "player di mana"
         float distFromCenter = sqrtf(pPos.x * pPos.x + pPos.z * pPos.z);
 
-        // --- BIAS A: Player jauh dari center -> lebih sering Wire Attack ---
-        // Wire Attack lebih efektif kalau player ada di pinggir (sulit dodge ke samping)
+        // --- BIAS A: Player jauh dari center -> Wire Attack (LEMAH) ---
+        // Tetap ada bias tapi dikecilkan (15%) biar Wire tidak terasa dominan.
+        // Cooldown Wire yang tinggi (3) sudah cukup batasi frekuensinya.
         if (distFromCenter > 7.0f && s_cooldowns[static_cast<int>(AttackID::WireAttack)] <= 0)
         {
-            // 40% chance override ke WireAttack
-            if ((rand() % 100) < 40)
+            if ((rand() % 100) < 15)
             {
                 candidateIndex = static_cast<int>(AttackID::WireAttack);
             }
         }
 
         // --- BIAS B: Player di center -> lebih sering Lock Player ---
-        // Lock Player paling devastating kalau player di tengah (banyak musuh di sekitar)
         if (distFromCenter < 4.0f && s_cooldowns[static_cast<int>(AttackID::LockPlayer)] <= 0)
         {
-            // 35% chance override ke LockPlayer
             if ((rand() % 100) < 35)
             {
                 candidateIndex = static_cast<int>(AttackID::LockPlayer);
             }
         }
+
+        // NOTE: DownloadAttack tidak dapat bias khusus di sini 
+        // round robin + cooldown 1 sudah cukup pastikan dia muncul
+        // secara alami dalam rotasi tanpa perlu didorong.
     }
 
     // =========================================================
@@ -302,10 +304,10 @@ void BossSpawnEnemyState::Update(Boss* boss, float dt)
                 {
                 case 0: zPos = -7.0f;  break;  // Bawah kiri
                 case 1: zPos = -3.0f;  break;  // Bawah kanan
-                case 2: zPos = 9.0f;  break;  // Atas kiri
-                case 3: zPos = 5.0f;  break;  // Tengah kanan
+                case 2: zPos = -5.0f;  break;  // Bawah kiri (dari +9)
+                case 3: zPos = -1.0f;  break;  // Tengah bawah kanan (dari +5)
                 case 4: zPos = -9.0f;  break;  // Bawah jauh kiri
-                case 5: zPos = 7.0f;  break;  // Atas jauh kanan
+                case 5: zPos = -8.0f;  break;  // Bawah jauh kanan (dari +7)
                 default: zPos = 0.0f;  break;
                 }
 
@@ -375,6 +377,8 @@ void BossLockPlayerState::Enter(Boss* boss)
     boss->AddTerminalLog("MOBILITY SYSTEMS: OFFLINE");
     boss->GetMonitor1()->ShowLockScreen();
     m_timer = 0.0f;
+    m_burstSpawnTimer = 0.0f;
+    m_burstSpawnCount = 0;
 }
 
 void BossLockPlayerState::Update(Boss* boss, float dt)
@@ -404,6 +408,48 @@ void BossLockPlayerState::Update(Boss* boss, float dt)
         {
             player->SetMovementLock(true);
             player->SetPosition(m_lockPosition.x, 0.0f, m_lockPosition.z);
+
+            // =========================================================
+            // BURST SPAWN  jalan selama hard-lock
+            // Spawn musuh di sekitar player yang sedang di-lock.
+            // Posisi dibatasi ke bawah (Z negatif) supaya tidak
+            // numpuk di half-top layar.
+            // =========================================================
+            if (m_burstSpawnCount < k_burstSpawnTotal)
+            {
+                m_burstSpawnTimer += dt;
+
+                if (m_burstSpawnTimer >= k_burstSpawnInterval)
+                {
+                    m_burstSpawnTimer = 0.0f;
+
+                    if (auto* em = boss->GetEnemyManager())
+                    {
+                        // Sisi: kiri atau kanan secara alternating
+                        float side = (m_burstSpawnCount % 2 == 0) ? -1.0f : 1.0f;
+                        float xPos = side * (6.0f + (rand() % 40) / 10.0f); // 6.0 - 10.0
+
+                        // Z: HANYA di half bawah layar (-2.0 sampai -10.0)
+                        // Ini jaga musuh tetap di area bawah sehingga
+                        // tidak numpuk di atas.
+                        float zPos = -2.0f - (rand() % 80) / 10.0f; // -2.0 sampai -10.0
+
+                        XMFLOAT3 spawnPos = { xPos, 0.0f, zPos };
+
+                        EnemySpawnConfig config;
+                        config.Position = spawnPos;
+                        config.Color = { 1.f, 0.f, 0.f, 1.f };
+                        config.Type = EnemyType::Paddle;
+                        config.AttackBehavior = AttackType::Tracking;
+                        config.Direction = MoveDir::None;
+
+                        em->SpawnEnemy(config);
+
+                        m_burstSpawnCount++;
+                        boss->AddTerminalLog("LOCK: UNIT_BURST [" + std::to_string(m_burstSpawnCount) + "]");
+                    }
+                }
+            }
         }
     }
 

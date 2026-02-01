@@ -42,7 +42,7 @@ void WindowManager::EnforceWindowPriorities()
     // =========================================================
     // [MODIFIKASI] SMART TOPMOST
     // =========================================================
-#ifdef _DEBUG
+#ifdef _RELEASE
     // MODE DEBUG: Matikan TopMost agar tidak menghalangi debugging
     // Window akan berperilaku normal (bisa ditumpuk window lain)
     HWND hInsertAfter = HWND_NOTOPMOST;

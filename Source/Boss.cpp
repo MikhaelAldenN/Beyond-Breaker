@@ -182,10 +182,12 @@ void Boss::Update(float dt)
                 m_concurrentSpawnTimer = m_concurrentSpawnConfig.activateDelay; // Reset ke batas (bukan 0), biar interval konsisten
 
                 // --- Tentukan posisi spawn ---
-                // Pilih sisi acak (kiri / kanan) dan Z acak di area tengah layar
+                // Pilih sisi acak (kiri / kanan).
+                // Z dibatasi ke HALF BAWAH layar (-2.0 sampai -10.0)
+                // agar musuh tidak numpuk di atas.
                 float side = (rand() % 2 == 0) ? 1.0f : -1.0f;
                 float xPos = side * (8.0f + (rand() % 40) / 10.0f); // 8.0 - 12.0, kiri atau kanan
-                float zPos = -6.0f + (rand() % 120) / 10.0f;        // -6.0 sampai +6.0
+                float zPos = -2.0f - (rand() % 80) / 10.0f;         // -2.0 sampai -10.0 (bawah saja)
 
                 XMFLOAT3 spawnPos = { xPos, 0.0f, zPos };
 

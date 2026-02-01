@@ -109,10 +109,10 @@ private:
     // boleh dipilih lagi setelah digunakan.
     // =========================================================
     static constexpr int k_cooldownSpawnEnemy = 0;  // Bisa langsung ulang
-    static constexpr int k_cooldownSpawnPentagon = 2;  // Tunggu 2 serangan lain (dari 3)
-    static constexpr int k_cooldownLockPlayer = 1;  // Tunggu 1 serangan lain (dari 2)
-    static constexpr int k_cooldownDownloadAttack = 1;  // Tunggu 1 serangan lain (dari 2)
-    static constexpr int k_cooldownWireAttack = 1;  // Tunggu 1 serangan lain
+    static constexpr int k_cooldownSpawnPentagon = 2;  // Tunggu 2 serangan lain
+    static constexpr int k_cooldownLockPlayer = 1;  // Tunggu 1 serangan lain
+    static constexpr int k_cooldownDownloadAttack = 1;  // Tunggu 1 serangan lain
+    static constexpr int k_cooldownWireAttack = 3;  // Tunggu 3 serangan lain (dari 1)  supaya jarang
 
     // =========================================================
     // [AI] SHUFFLE CHANCE
@@ -164,6 +164,15 @@ private:
     const float m_holdDuration = 5.0f;
 
     const DirectX::XMFLOAT3 m_lockPosition = { 0.0f, 0.0f, -8.0f };
+
+    // =========================================================
+    // BURST SPAWN saat player di-lock
+    // Spawn musuh secara berkala selama fase hard-lock berlangsung.
+    // =========================================================
+    float m_burstSpawnTimer = 0.0f;
+    int   m_burstSpawnCount = 0;
+    static constexpr int   k_burstSpawnTotal = 3;    // Berapa musuh yang di-spawn selama lock
+    static constexpr float k_burstSpawnInterval = 1.8f; // Jeda antar spawn (detik)
 };
 
 // --- Command/Typing State (Transition Wrapper) ---
