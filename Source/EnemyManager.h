@@ -485,7 +485,12 @@ public:
     void SpawnEnemy(const EnemySpawnConfig& config);
 
     // [GAMEBREAKER] Additional functionality
-    void RespawnEnemyAs(size_t index, AttackType attack, MoveDir dir, float minX, float maxX, float minZ, float maxZ);
+    // Simple version (for Static/Tracking without movement)
+    void RespawnEnemyAs(size_t index, AttackType attack);
+
+    // Full version (for movement-based attacks)
+    void RespawnEnemyAs(size_t index, AttackType attack, MoveDir dir,
+        float minX, float maxX, float minZ = 0.0f, float maxZ = 0.0f);
 
     std::vector<std::unique_ptr<Enemy>>& GetEnemies() { return m_enemies; }
 

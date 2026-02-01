@@ -121,6 +121,11 @@ void EnemyManager::RenderDebug(ShapeRenderer* renderer)
     }
 }
 
+void EnemyManager::RespawnEnemyAs(size_t index, AttackType attack)
+{
+    RespawnEnemyAs(index, attack, MoveDir::None, 0.0f, 0.0f, 0.0f, 0.0f);
+}
+
 // =========================================================
 // [GAMEBREAKER] RESPAWN FUNCTIONALITY
 // =========================================================
