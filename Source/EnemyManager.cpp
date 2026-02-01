@@ -20,18 +20,19 @@ void EnemyManager::SpawnEnemy(const EnemySpawnConfig& config)
     ID3D11Device* device = Graphics::Instance().GetDevice();
     const char* modelPath = "";
 
-    // [MODIFIKASI] Seleksi Model
+    // Model Selection based on EnemyType
     if (config.Type == EnemyType::Ball)
     {
         modelPath = "Data/Model/Character/PLACEHOLDER_mdl_Ball.glb";
     }
-    else if (config.Type == EnemyType::Pentagon) // [BARU]
+    else if (config.Type == EnemyType::Pentagon)
     {
+        // [GAMEBEYOND] Pentagon has its own model
         modelPath = "Data/Model/Character/PLACEHOLDER_mdl_Pentagon.glb";
     }
     else
     {
-        // Default ke Paddle
+        // Default to Paddle
         modelPath = "Data/Model/Character/PLACEHOLDER_mdl_Paddle.glb";
     }
 
@@ -50,17 +51,21 @@ void EnemyManager::SpawnEnemy(const EnemySpawnConfig& config)
         config.Direction
     );
 
+    // [GAMEBEYOND] Apply scale if specified
     newEnemy->SetScale(config.Scale);
 
     m_enemies.push_back(std::move(newEnemy));
 }
 
-void EnemyManager::Update(float elapsedTime, Camera* camera, const DirectX::XMFLOAT3& playerPos)
+void EnemyManager::Update(float elapsedTime, Camera* camera, const DirectX::XMFLOAT3& playerPos, bool allowAttack)
 {
     for (auto& enemy : m_enemies)
     {
         enemy->Update(elapsedTime, camera);
-        enemy->UpdateTracking(elapsedTime, camera, playerPos);
+
+        // Pass allowAttack parameter to UpdateTracking
+        // Default is true, so GameBeyond (which doesn't use this param) will work fine
+        enemy->UpdateTracking(elapsedTime, camera, playerPos, allowAttack);
     }
 }
 
@@ -68,35 +73,42 @@ void EnemyManager::Render(ModelRenderer* renderer, Camera* camera)
 {
     for (auto& enemy : m_enemies)
     {
+        // =========================================================
+        // FRUSTUM CULLING FOR ENEMY BODY
+        // =========================================================
         bool isBodyVisible = true;
 
         if (camera)
         {
             DirectX::XMFLOAT3 pos = enemy->GetPosition();
 
-            // [PERBAIKAN] Ambil Scale musuh
+            // [GAMEBEYOND] Scale-aware culling radius
             DirectX::XMFLOAT3 scale = enemy->GetScale();
-
-            // Cari nilai scale terbesar (misal kalau X=2, Y=1, Z=2 -> ambil 2)
             float maxScale = max(scale.x, max(scale.y, scale.z));
 
-            // Base radius 1.5f dikali scale. 
-            // Kalau scale 2.0, radius jadi 3.0. Kalau scale 100, radius jadi 150.
-            float cullingRadius = 150.0f * maxScale;
+            // Base radius 1.5f, scaled appropriately
+            // For Pentagon (scale 150), this becomes 225.0f
+            float cullingRadius = 1.5f * maxScale;
 
-            // Gunakan radius dinamis
             if (!camera->CheckSphere(pos.x, pos.y, pos.z, cullingRadius))
             {
                 isBodyVisible = false;
             }
         }
 
+        // =========================================================
+        // RENDER ENEMY BODY (only if visible)
+        // =========================================================
         if (isBodyVisible)
         {
             renderer->Draw(ShaderId::Phong, enemy->GetModel(), enemy->color);
         }
 
-        // Projectiles tetap dirender terpisah (selalu render)
+        // =========================================================
+        // RENDER PROJECTILES (always render, even if enemy is off-screen)
+        // =========================================================
+        // IMPORTANT: Projectiles must always be rendered because they can
+        // travel outside the screen boundaries while the enemy is culled
         enemy->RenderProjectiles(renderer);
     }
 }
@@ -107,4 +119,31 @@ void EnemyManager::RenderDebug(ShapeRenderer* renderer)
     {
         enemy->RenderDebugProjectiles(renderer);
     }
+}
+
+// =========================================================
+// [GAMEBREAKER] RESPAWN FUNCTIONALITY
+// =========================================================
+void EnemyManager::RespawnEnemyAs(size_t index, AttackType attack, MoveDir dir, float minX, float maxX, float minZ, float maxZ)
+{
+    if (index >= m_enemies.size()) return;
+
+    auto& e = m_enemies[index];
+
+    EnemySpawnConfig config;
+    config.Position = e->GetPosition();
+    config.Rotation = e->GetRotation();
+    config.Color = e->color;
+    config.Type = e->GetType();
+    config.AttackBehavior = attack;
+    config.Direction = dir;
+    config.MinX = minX;
+    config.MaxX = maxX;
+    config.MinZ = minZ;
+    config.MaxZ = maxZ;
+
+    SpawnEnemy(config);
+
+    std::swap(m_enemies[index], m_enemies.back());
+    m_enemies.pop_back();
 }

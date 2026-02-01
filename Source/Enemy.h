@@ -20,14 +20,25 @@ class ShapeRenderer;
 class Enemy : public Character
 {
 public:
-    Enemy(ID3D11Device* device, const char* filePath, DirectX::XMFLOAT3 startPos, DirectX::XMFLOAT3 startRot, 
+    Enemy(ID3D11Device* device, const char* filePath, DirectX::XMFLOAT3 startPos, DirectX::XMFLOAT3 startRot,
         DirectX::XMFLOAT4 startColor, EnemyType type, AttackType attackType,
-        float minX = 0.0f, float maxX = 0.0f, 
+        float minX = 0.0f, float maxX = 0.0f,
         float minZ = 0.0f, float maxZ = 0.0f, MoveDir dir = (MoveDir)0);
     ~Enemy() override;
 
     void Update(float elapsedTime, Camera* camera) override;
-    void UpdateTracking(float elapsedTime, Camera* camera, const DirectX::XMFLOAT3& playerPos);
+
+    // [COMPATIBILITY] Support both signatures
+    void UpdateTracking(float elapsedTime, Camera* camera, const DirectX::XMFLOAT3& playerPos, bool allowAttack = true);
+
+    // [GAMEBREAKER FEATURES] - Kept for compatibility
+    void SetActive(bool active) { m_isActive = active; }
+    void SetHighlight(bool highlight) { m_isHighlighted = highlight; }
+    void UpdateOriginalTransform(const DirectX::XMFLOAT3& pos, const DirectX::XMFLOAT3& rot);
+    void SetMoveDir(MoveDir dir) { m_moveDir = dir; }
+    void SetPatrolLimitsX(float minOffset, float maxOffset);
+    void SetPatrolLimitsZ(float minOffset, float maxOffset);
+
     void SetPosition(const DirectX::XMFLOAT3& pos);
     void SetRotation(const DirectX::XMFLOAT3& rot);
     void RenderDebugProjectiles(ShapeRenderer* renderer);
@@ -38,18 +49,29 @@ public:
     DirectX::XMFLOAT4 color;
     DirectX::XMFLOAT3 GetOriginalPosition() const { return originalPosition; }
     DirectX::XMFLOAT3 GetOriginalRotation() const { return originalRotation; }
-    
+
     EnemyType GetType() const { return m_type; }
     std::shared_ptr<Model> GetModel() const { return m_model; }
 
     AttackType GetAttackType() const { return m_attackType; }
     std::deque<std::unique_ptr<Ball>>& GetProjectiles() { return m_projectiles; }
 
+    bool IsActive() const { return m_isActive; }
+    bool IsHighlighted() const { return m_isHighlighted; }
+
+    // [GAMEBREAKER] Getters for Copy Logic
+    float GetMinX() const { return m_patrolMinX - originalPosition.x; }
+    float GetMaxX() const { return m_patrolMaxX - originalPosition.x; }
+    float GetMinZ() const { return m_patrolMinZ - originalPosition.z; }
+    float GetMaxZ() const { return m_patrolMaxZ - originalPosition.z; }
+    MoveDir GetMoveDir() const { return m_moveDir; }
+
+    // [GAMEBEYOND FEATURES] - Scale support
     void SetScale(const DirectX::XMFLOAT3& scale) { m_scale = scale; }
     DirectX::XMFLOAT3 GetScale() const { return m_scale; }
 
 private:
-    void UpdateAttackLogic(float elapsedTime, Camera* camera, const DirectX::XMFLOAT3& playerPos);
+    void UpdateAttackLogic(float elapsedTime, Camera* camera, const DirectX::XMFLOAT3& playerPos, bool allowAttack);
 
     DirectX::XMFLOAT3 GetForwardVector() const;
     DirectX::XMFLOAT3 originalPosition;
@@ -63,17 +85,17 @@ private:
     // ATTACK SETTINGS 
     // ==========================================
     // Gameplay Stats
-    float m_attackTimer         = 0.0f;
-    float m_fireRate            = 1.5f;   // Time between shots (seconds)
-    float m_projectileSpeed     = 10.0f;  // Speed of the ball
-    float m_activationDistance  = 35.0f;  // Enemy starts firing when player is this close
-    float m_despawnDistance     = 55.0f;  // Projectiles die when this far from player
-    float m_patrolMinX          = 0.0f;
-    float m_patrolMaxX          = 0.0f;
-    float m_patrolMinZ          = 0.0f; 
-    float m_patrolMaxZ          = 0.0f; 
-    float m_currentSpeed        = 0.0f;
-    float m_baseMoveSpeed       = 2.0f;
+    float m_attackTimer = 0.0f;
+    float m_fireRate = 1.5f;   // Time between shots (seconds)
+    float m_projectileSpeed = 7.0f;   // Speed of the ball (GameBreaker default)
+    float m_activationDistance = 35.0f;  // Enemy starts firing when player is this close
+    float m_despawnDistance = 55.0f;  // Projectiles die when this far from player
+    float m_patrolMinX = 0.0f;
+    float m_patrolMaxX = 0.0f;
+    float m_patrolMinZ = 0.0f;
+    float m_patrolMaxZ = 0.0f;
+    float m_currentSpeed = 0.0f;
+    float m_baseMoveSpeed = 2.0f;
 
     // Helper
     float GetRandomFloat(float min, float max);
@@ -88,8 +110,12 @@ private:
     static constexpr float SPAWN_OFFSET_FWD = 0.6f;
     static constexpr float SPAWN_OFFSET_Y = 0.0f;
 
-    // Visuals
-    DirectX::XMFLOAT4 m_projectileColor = { 1.0f, 1.0f, 1.0f, 1.0f }; 
+    // [GAMEBREAKER] GUI Features
+    bool m_isActive = false;
+    MoveDir m_moveDir;
+    bool m_isHighlighted = false;
 
+    // [GAMEBEYOND] Visuals
+    DirectX::XMFLOAT4 m_projectileColor = { 1.0f, 1.0f, 1.0f, 1.0f };
     DirectX::XMFLOAT3 m_scale = { 1.0f, 1.0f, 1.0f };
 };

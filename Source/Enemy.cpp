@@ -11,15 +11,16 @@ Enemy::Enemy(ID3D11Device* device, const char* filePath, XMFLOAT3 startPos, XMFL
     m_type = type;
     m_attackType = attackType;
 
+    // [GAMEBEYOND] Scale handling for Pentagon type
     if (m_type == EnemyType::Pentagon)
     {
-        // Pentagon agak besar (misal 2x lipat)
         m_scale = { 150.0f, 150.0f, 150.0f };
+        m_projectileSpeed = 10.0f; // Pentagon uses faster projectiles
     }
     else
     {
-        // Default normal
         m_scale = { 1.0f, 1.0f, 1.0f };
+        m_projectileSpeed = 7.0f; // GameBreaker default speed
     }
 
     movement->SetGravityEnabled(false);
@@ -33,9 +34,14 @@ Enemy::Enemy(ID3D11Device* device, const char* filePath, XMFLOAT3 startPos, XMFL
     m_patrolMinZ = startPos.z + minZ;
     m_patrolMaxZ = startPos.z + maxZ;
     m_randomTargetPos = startPos;
-    if (dir == MoveDir::Right)      m_currentSpeed = m_baseMoveSpeed;
-    else if (dir == MoveDir::Left)  m_currentSpeed = -m_baseMoveSpeed;
+
+    // [FIX] Corrected direction logic to match GameBreaker
+    if (dir == MoveDir::Right)      m_currentSpeed = -m_baseMoveSpeed;
+    else if (dir == MoveDir::Left)  m_currentSpeed = m_baseMoveSpeed;
     else                            m_currentSpeed = 0.0f;
+
+    m_moveDir = dir;
+    m_isActive = true;
 }
 
 float Enemy::GetRandomFloat(float min, float max)
@@ -50,17 +56,28 @@ Enemy::~Enemy() {}
 void Enemy::Update(float elapsedTime, Camera* camera)
 {
     // =========================================================
-    // [BARU] LOGIKA ROTASI PENTAGON
+    // [GAMEBREAKER] Active state check
+    // =========================================================
+    if (!m_isActive)
+    {
+        if (movement) movement->Update(elapsedTime);
+        SyncData();
+        return;
+    }
+
+    // =========================================================
+    // [GAMEBEYOND] Pentagon auto-rotation
     // =========================================================
     if (m_type == EnemyType::Pentagon)
     {
-        // Putar musuh secara terus menerus pada sumbu Y
         XMFLOAT3 rot = movement->GetRotation();
-        rot.y += 10.0f * elapsedTime; // Kecepatan putar (makin besar makin cepat)
+        rot.y += 10.0f * elapsedTime;
         movement->SetRotation(rot);
     }
-    // =========================================================
 
+    // =========================================================
+    // MOVEMENT LOGIC
+    // =========================================================
     if (m_attackType == AttackType::TrackingHorizontal)
     {
         XMFLOAT3 pos = movement->GetPosition();
@@ -71,7 +88,6 @@ void Enemy::Update(float elapsedTime, Camera* camera)
             pos.x = m_patrolMaxX;
             m_currentSpeed = -std::abs(m_baseMoveSpeed);
         }
-
         else if (pos.x <= m_patrolMinX)
         {
             pos.x = m_patrolMinX;
@@ -80,7 +96,6 @@ void Enemy::Update(float elapsedTime, Camera* camera)
 
         movement->SetPosition(pos);
     }
-
     else if (m_attackType == AttackType::TrackingRandom)
     {
         XMFLOAT3 pos = movement->GetPosition();
@@ -104,87 +119,80 @@ void Enemy::Update(float elapsedTime, Camera* camera)
         XMStoreFloat3(&pos, vNewPos);
         movement->SetPosition(pos);
     }
-    else if (m_attackType == AttackType::Tracking)
-    {
-        XMFLOAT3 fwd = GetForwardVector();
-
-        float chaseSpeed = m_baseMoveSpeed * 0.4f;
-
-        XMFLOAT3 pos = movement->GetPosition();
-        pos.x += fwd.x * chaseSpeed * elapsedTime;
-        pos.z += fwd.z * chaseSpeed * elapsedTime;
-
-        movement->SetPosition(pos);
-    }
+    // =========================================================
+    // [REMOVED] AttackType::Tracking movement logic
+    // This was causing GameBreaker enemies to move toward player!
+    // Movement toward player should ONLY happen in UpdateTracking()
+    // when explicitly called by GameBeyond's SceneGameBeyond
+    // =========================================================
 
     if (movement) movement->Update(elapsedTime);
-    //SyncData();
 
     // =========================================================
-    // [BARU] APPLY SCALE & TRANSFORM MANUAL
+    // [GAMEBEYOND] Apply scale transformation
     // =========================================================
-    // Kita harus hitung ulang matriks dunia (World Matrix) agar scale-nya masuk.
+    if (m_type == EnemyType::Pentagon || m_scale.x != 1.0f || m_scale.y != 1.0f || m_scale.z != 1.0f)
+    {
+        XMFLOAT3 pos = movement->GetPosition();
+        XMFLOAT3 rot = movement->GetRotation();
 
-    XMFLOAT3 pos = movement->GetPosition();
-    XMFLOAT3 rot = movement->GetRotation();
+        XMMATRIX S = XMMatrixScaling(m_scale.x, m_scale.y, m_scale.z);
+        XMMATRIX R = XMMatrixRotationRollPitchYaw(
+            XMConvertToRadians(rot.x),
+            XMConvertToRadians(rot.y),
+            XMConvertToRadians(rot.z)
+        );
+        XMMATRIX T = XMMatrixTranslation(pos.x, pos.y, pos.z);
 
-    // 2. Buat Matrix Scale (INILAH KUNCINYA)
-    XMMATRIX S = XMMatrixScaling(m_scale.x, m_scale.y, m_scale.z);
+        XMFLOAT4X4 worldMatrix;
+        XMStoreFloat4x4(&worldMatrix, S * R * T);
 
-    // 3. Buat Matrix Rotasi
-    XMMATRIX R = XMMatrixRotationRollPitchYaw(
-        XMConvertToRadians(rot.x),
-        XMConvertToRadians(rot.y),
-        XMConvertToRadians(rot.z)
-    );
-
-    // 4. Buat Matrix Posisi
-    XMMATRIX T = XMMatrixTranslation(pos.x, pos.y, pos.z);
-
-    // 5. Gabungkan: Scale -> Rotate -> Translate
-    XMFLOAT4X4 worldMatrix;
-    XMStoreFloat4x4(&worldMatrix, S * R * T);
-
-    // 6. Terapkan ke Model
-    if (m_model) m_model->UpdateTransform(worldMatrix);
+        if (m_model) m_model->UpdateTransform(worldMatrix);
+    }
+    else
+    {
+        // [GAMEBREAKER] Normal sync for non-scaled enemies
+        SyncData();
+    }
 }
 
-void Enemy::UpdateTracking(float elapsedTime, Camera* camera, const DirectX::XMFLOAT3& playerPos)
+void Enemy::UpdateTracking(float elapsedTime, Camera* camera, const DirectX::XMFLOAT3& playerPos, bool allowAttack)
 {
     if (!camera) return;
-    UpdateAttackLogic(elapsedTime, camera, playerPos);
+    UpdateAttackLogic(elapsedTime, camera, playerPos, allowAttack);
 }
 
-void Enemy::UpdateAttackLogic(float elapsedTime, Camera* camera, const DirectX::XMFLOAT3& playerPos)
+void Enemy::UpdateAttackLogic(float elapsedTime, Camera* camera, const DirectX::XMFLOAT3& playerPos, bool allowAttack)
 {
     if (m_attackType == AttackType::None) return;
     if (!camera) return;
 
     XMFLOAT3 myPos = movement->GetPosition();
-    XMFLOAT3 targetPos = playerPos; // Default target
+    XMFLOAT3 targetPos = playerPos;
 
-    // Jarak ke player (untuk aktivasi)
     float dx = std::abs(targetPos.x - myPos.x);
     float dz = std::abs(targetPos.z - myPos.z);
     float distSq = dx * dx + dz * dz;
 
-    // Cek apakah player cukup dekat untuk mulai menyerang
-    if (distSq < (m_activationDistance * m_activationDistance))
+    // =========================================================
+    // ATTACK ACTIVATION CHECK
+    // =========================================================
+    if (allowAttack && distSq < (m_activationDistance * m_activationDistance))
     {
         bool isTrackingType = (m_attackType == AttackType::Tracking ||
             m_attackType == AttackType::TrackingHorizontal ||
             m_attackType == AttackType::TrackingRandom);
 
-        // Jika tipe Tracking, putar badan menghadap player
+        // =========================================================
+        // ROTATION LOGIC - Face player
+        // =========================================================
         if (isTrackingType)
         {
             float diffX = targetPos.x - myPos.x;
             float diffZ = targetPos.z - myPos.z;
 
-            // atan2f mengembalikan RADIANS (-3.14 s/d 3.14)
+            // [FIX] Convert radians to degrees for proper rotation
             float targetYawRad = atan2f(diffX, diffZ);
-
-            // [FIX] Konversi ke DEGREES agar sesuai dengan sistem render
             float targetYawDeg = XMConvertToDegrees(targetYawRad);
 
             movement->SetRotation({ 0.0f, targetYawDeg, 0.0f });
@@ -192,44 +200,43 @@ void Enemy::UpdateAttackLogic(float elapsedTime, Camera* camera, const DirectX::
 
         m_attackTimer += elapsedTime;
 
+        // =========================================================
+        // PROJECTILE FIRING
+        // =========================================================
         if (m_attackTimer >= m_fireRate)
         {
             m_attackTimer = 0.0f;
 
             // =========================================================
-            // [BARU] LOGIKA SERANGAN RADIAL BURST (PENTAGON)
+            // [GAMEBEYOND] RADIAL BURST ATTACK (Pentagon)
             // =========================================================
             if (m_attackType == AttackType::RadialBurst)
             {
-                int projectileCount = 8; // Jumlah peluru (8 penjuru mata angin)
-                float angleStep = DirectX::XM_2PI / projectileCount; // 360 derajat / 8
+                int projectileCount = 8;
+                float angleStep = DirectX::XM_2PI / projectileCount;
 
                 for (int i = 0; i < projectileCount; ++i)
                 {
-                    // Hitung arah peluru berdasarkan sudut lingkaran
                     float currentAngle = i * angleStep;
                     float dirX = sinf(currentAngle);
                     float dirZ = cosf(currentAngle);
 
                     XMFLOAT3 burstDir = { dirX, 0.0f, dirZ };
 
-                    // Spawn Projectile
                     auto newBall = std::make_unique<Ball>();
 
-                    // Offset spawn sedikit biar gak numpuk di tengah badan musuh
                     XMFLOAT3 spawnPos = myPos;
                     spawnPos.x += dirX * 1.0f;
                     spawnPos.z += dirZ * 1.0f;
 
                     newBall->Fire(spawnPos, burstDir, m_projectileSpeed);
-                    newBall->SetBoundariesEnabled(false); // Biar peluru bisa tembus tembok layar
+                    newBall->SetBoundariesEnabled(false);
 
-                    // Masukkan ke list peluru
                     m_projectiles.push_back(std::move(newBall));
                 }
             }
             // =========================================================
-            // LOGIKA SERANGAN NORMAL (TRACKING / STATIC)
+            // NORMAL ATTACK (All other types)
             // =========================================================
             else
             {
@@ -263,7 +270,9 @@ void Enemy::UpdateAttackLogic(float elapsedTime, Camera* camera, const DirectX::
         }
     }
 
-    // Update Projectiles (Hapus jika terlalu jauh)
+    // =========================================================
+    // UPDATE PROJECTILES (Despawn when too far)
+    // =========================================================
     auto it = m_projectiles.begin();
     while (it != m_projectiles.end())
     {
@@ -273,12 +282,14 @@ void Enemy::UpdateAttackLogic(float elapsedTime, Camera* camera, const DirectX::
 
         XMFLOAT3 bPos = ball->GetMovement()->GetPosition();
 
-        // Gunakan myPos (posisi musuh) sebagai titik tengah despawn distance
+        // [FIX] Use enemy position (myPos) as center for despawn distance
         float bDx = myPos.x - bPos.x;
         float bDz = myPos.z - bPos.z;
 
-        if ((bDx * bDx + bDz * bDz) > (m_despawnDistance * m_despawnDistance)) it = m_projectiles.erase(it);
-        else ++it;
+        if ((bDx * bDx + bDz * bDz) > (m_despawnDistance * m_despawnDistance))
+            it = m_projectiles.erase(it);
+        else
+            ++it;
     }
 }
 
@@ -286,11 +297,10 @@ DirectX::XMFLOAT3 Enemy::GetForwardVector() const
 {
     XMFLOAT3 rot = movement->GetRotation();
 
-    // [FIX] Konversi Derajat ke Radian sebelum masuk sin/cos!
+    // [FIX] Convert degrees to radians before sin/cos calculations
     float yawRad = XMConvertToRadians(rot.y);
     float pitchRad = XMConvertToRadians(rot.x);
 
-    // Gunakan nilai Radian untuk menghitung vektor
     float x = sinf(yawRad) * cosf(pitchRad);
     float y = -sinf(pitchRad);
     float z = cosf(yawRad) * cosf(pitchRad);
@@ -317,8 +327,47 @@ void Enemy::RenderDebugProjectiles(ShapeRenderer* renderer)
             renderer->DrawSphere(pos, radius, { 1.0f, 0.0f, 0.0f, 1.0f });
         }
     }
+
+    // [GAMEBREAKER] Highlight for GUI
+    if (m_isHighlighted)
+    {
+        DirectX::XMFLOAT3 pos = movement->GetPosition();
+        renderer->DrawBox(pos, { 0.0f, 0.0f, 0.0f }, { 2.0f, 1.0f, 1.0f }, { 0.0f, 1.0f, 0.0f, 1.0f });
+    }
 }
 
+// =========================================================
+// [GAMEBREAKER] Patrol Limit Functions
+// =========================================================
+void Enemy::SetPatrolLimitsX(float minOffset, float maxOffset)
+{
+    m_patrolMinX = originalPosition.x + minOffset;
+    m_patrolMaxX = originalPosition.x + maxOffset;
+}
+
+void Enemy::SetPatrolLimitsZ(float minOffset, float maxOffset)
+{
+    m_patrolMinZ = originalPosition.z + minOffset;
+    m_patrolMaxZ = originalPosition.z + maxOffset;
+}
+
+void Enemy::UpdateOriginalTransform(const DirectX::XMFLOAT3& pos, const DirectX::XMFLOAT3& rot)
+{
+    originalPosition = pos;
+    originalRotation = rot;
+
+    if (!m_isActive)
+    {
+        m_patrolMinX = pos.x;
+        m_patrolMaxX = pos.x;
+        m_patrolMinZ = pos.z;
+        m_patrolMaxZ = pos.z;
+    }
+}
+
+// =========================================================
+// BASIC GETTERS/SETTERS
+// =========================================================
 void Enemy::SetPosition(const DirectX::XMFLOAT3& pos) { movement->SetPosition(pos); }
 void Enemy::SetRotation(const DirectX::XMFLOAT3& rot) { movement->SetRotation(rot); }
 
