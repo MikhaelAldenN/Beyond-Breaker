@@ -408,6 +408,35 @@ void BossLockPlayerState::Update(Boss* boss, float dt)
         boss->AddTerminalLog("GRAVITY WELL: DISSIPATED");
         boss->GetStateMachine()->ChangeState(boss, new BossIdleState());
     }
+
+    static float spawnTimer = 0.0f;
+    if (m_timer >= m_introDuration && m_timer < (m_introDuration + m_holdDuration))
+    {
+        spawnTimer += dt;
+        if (spawnTimer >= 0.8f)
+        {
+            spawnTimer = 0.0f;
+
+            // >>> TAMBAHKAN BARIS INI AGAR 'em' DIKENALI <<<
+            EnemyManager* em = boss->GetEnemyManager();
+
+            if (em)
+            {
+                EnemySpawnConfig config;
+                float angle = (rand() % 360) * 0.01745f;
+                config.Position = {
+                    m_lockPosition.x + cosf(angle) * 10.0f,
+                    0.0f,
+                    m_lockPosition.z + sinf(angle) * 10.0f
+                };
+                config.Type = EnemyType::Paddle;
+                config.AttackBehavior = AttackType::Tracking;
+
+                // Hapus baris boss->AddTerminalLog... jika membuat spam log
+                em->SpawnEnemy(config);
+            }
+        }
+    }
 }
 
 void BossLockPlayerState::Exit(Boss* boss)
