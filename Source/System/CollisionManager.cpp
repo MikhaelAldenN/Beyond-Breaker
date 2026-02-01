@@ -1208,8 +1208,14 @@ void CollisionManager::CheckBossMonitor1VsPlayer()
     {
         if (m_monitor1HitCooldown <= 0.0f)
         {
-            m_boss->m_monitor1Health--;
+            m_boss->SetMonitor1Health(m_boss->GetMonitor1Health() - 1);
             m_monitor1HitCooldown = MONITOR1_HIT_COOLDOWN;
+
+            TerminalMonitor1* terminal = m_boss->GetMonitor1();
+            if (terminal)
+            {
+                terminal->UpdateMonitorHealth(m_boss->m_monitor1Health, 50);
+            }
 
             // [BARU] TRIGGER SHAKE!
             monitor1->shakeTimer = 0.2f;      // Shake selama 200ms
@@ -1273,8 +1279,14 @@ void CollisionManager::CheckBossMonitor1VsBlocks()
         {
             if (m_monitor1HitCooldown <= 0.0f)
             {
-                m_boss->m_monitor1Health--;
+                m_boss->SetMonitor1Health(m_boss->GetMonitor1Health() - 1);
                 m_monitor1HitCooldown = MONITOR1_HIT_COOLDOWN;
+
+                TerminalMonitor1* terminal = m_boss->GetMonitor1();
+                if (terminal)
+                {
+                    terminal->UpdateMonitorHealth(m_boss->m_monitor1Health, 50);
+                }
 
                 // [BARU] TRIGGER SHAKE!
                 monitor1->shakeTimer = 0.15f;      // Lebih pendek dari player (block lebih ringan)
@@ -1344,8 +1356,14 @@ void CollisionManager::CheckBossMonitor1VsBlockProjectiles()
         {
             if (m_monitor1HitCooldown <= 0.0f)
             {
-                m_boss->m_monitor1Health--;
+                m_boss->SetMonitor1Health(m_boss->GetMonitor1Health() - 1);
                 m_monitor1HitCooldown = MONITOR1_HIT_COOLDOWN;
+
+                TerminalMonitor1* terminal = m_boss->GetMonitor1();
+                if (terminal)
+                {
+                    terminal->UpdateMonitorHealth(m_boss->m_monitor1Health, 50);
+                }
 
                 // [BARU] TRIGGER SHAKE! (Projectile lebih kuat)
                 monitor1->shakeTimer = 0.25f;      // Lebih lama (projectile lebih kuat)

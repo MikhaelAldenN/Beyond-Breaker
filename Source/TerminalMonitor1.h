@@ -51,6 +51,8 @@ public:
     ID3D11ShaderResourceView* GetTexture() const { return m_srv.Get(); }
     void DrawGUI();
 
+    void SetMonitorHealth(int current, int max);
+    void UpdateMonitorHealth(int current, int max);
 
 private:
     void UpdateCursorLogic(float dt);
@@ -135,4 +137,16 @@ private:
     float m_durationWarning = 3.0f;
     float m_durationPreDelay = 1.0f;
     float m_durationAnim = 0.4f; // Cepat
+
+
+    int m_monitorHealthCurrent = 25;
+    int m_monitorHealthMax = 25;
+    float m_healthBarWidth = 600.0f;
+    float m_healthBarHeight = 15.0f;
+    float m_healthBarOffsetY = -250.0f;  // Di atas monitor (offset negatif)
+    DirectX::XMFLOAT4 m_healthBarBgColor = { 0.2f, 0.2f, 0.2f, 0.8f };      // Abu-abu gelap
+    DirectX::XMFLOAT4 m_healthBarFgColor = { 0.0f, 1.0f, 0.0f, 1.0f };      // Hijau penuh
+    DirectX::XMFLOAT4 m_healthBarDmgColor = { 1.0f, 0.2f, 0.2f, 1.0f };     // Merah saat damage
+    float m_damageFlashDuration = 0.3f;  // Durasi kilat merah
+    float m_damageFlashTimer = 0.0f;     // Timer untuk flash effect
 };

@@ -160,6 +160,19 @@ public:
     void AddTerminalLog(const std::string& msg);
     TerminalMonitor1* GetMonitor1() { return &m_terminal1; }
 
+    //void Boss::SetMonitor1Health(int health)
+    //{
+    //    m_monitor1Health = health;
+
+    //    // Ubah 5 menjadi 25 (sesuai nyawa awal di Constructor)
+    //    m_terminal1.SetMonitorHealth(health, 25);
+
+    //    // Atau lebih aman gunakan UpdateMonitorHealth agar konsisten:
+    //    // m_terminal1.UpdateMonitorHealth(health, 25);
+    //}
+
+    int GetMonitor1Health() const { return m_monitor1Health; }
+
     // --- Projectile System ---
     std::vector<FileProjectile>& GetProjectiles() { return m_fileProjectiles; }
     void SpawnFileProjectile(const DirectX::XMFLOAT3& start, const DirectX::XMFLOAT3& target);
@@ -210,8 +223,14 @@ public:
 
     bool IsConcurrentSpawnEligibleState() const;
 
-    int m_monitor1Health = 5;
+    int m_monitor1Health = 50;
     bool m_monitor1Destroyed = false;
+
+    static const int MAX_MONITOR1_HEALTH = 50;
+
+    // Hapus implementasi fungsi di header jika ada (pindahkan ke .cpp biar rapi)
+    void SetMonitor1Health(int health);
+    void DamageMonitor1(int amount); // Tambahkan helper baru ini
 
 private:
     void InitializeParts();

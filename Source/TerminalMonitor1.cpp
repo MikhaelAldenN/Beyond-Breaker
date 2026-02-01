@@ -149,6 +149,11 @@ void TerminalMonitor1::Update(float dt)
     // ... Copy Logic Update dari file sebelumnya (Lerp Scale, Switch Case) ...
     // Bagian ini tidak berubah dari kode "Lerp" terakhir
 
+    if (m_damageFlashTimer > 0.0f)
+    {
+        m_damageFlashTimer -= dt;
+    }
+
     // Singkatnya: Update logic cursor, typing, dll.
     float centerX = (m_width / 2.0f) - (m_cursorBaseW / 2.0f);
     float centerY = (m_height / 2.0f) - (m_cursorBaseH / 2.0f);
@@ -293,12 +298,32 @@ void TerminalMonitor1::UpdateCursorLogic(float dt)
     if (m_cursor) m_cursor->Update(dt, m_cursorPos.x, m_cursorPos.y);
 }
 
+void TerminalMonitor1::SetMonitorHealth(int current, int max)
+{
+    m_monitorHealthCurrent = current;
+    m_monitorHealthMax = max;
+    m_damageFlashTimer = 0.0f;  // Reset flash
+}
+
+// [BARU] Healthbar Update dengan Damage Flash Effect
+void TerminalMonitor1::UpdateMonitorHealth(int current, int max)
+{
+    // Cek apakah ada damage
+    if (current < m_monitorHealthCurrent)
+    {
+        m_damageFlashTimer = m_damageFlashDuration;  // Trigger flash merah
+    }
+
+    m_monitorHealthCurrent = current;
+    m_monitorHealthMax = max;
+}
+
 
 void TerminalMonitor1::RenderToTexture(ID3D11DeviceContext* context, BitmapFont* font)
 {
     if (!font) return;
 
-    // Backup & Setup RTT (Sama)
+    // Backup & Setup RTT
     ID3D11RenderTargetView* prevRTV = nullptr;
     ID3D11DepthStencilView* prevDSV = nullptr;
     D3D11_VIEWPORT prevVP;
@@ -318,34 +343,85 @@ void TerminalMonitor1::RenderToTexture(ID3D11DeviceContext* context, BitmapFont*
     context->OMSetBlendState(rs->GetBlendState(BlendState::Transparency), blendFactor, 0xFFFFFFFF);
 
     // ============================================
-    // [LOGIC RENDER SPRITE]
-    // Muncul jika State LOCK aktif ATAU Debug Mode nyala
+    // [UPDATE] RENDER HEALTHBAR - ALWAYS VISIBLE
+    // ============================================
+    if (m_primitive)
+    {
+        // Hitung posisi healthbar (Di atas tengah monitor/cursor)
+        float healthBarX = m_lockPos.x - (m_healthBarWidth / 2.0f);
+        float healthBarY = m_lockPos.y + m_healthBarOffsetY;
+
+        // Background Bar (Background)
+        m_primitive->Rect(healthBarX, healthBarY, m_healthBarWidth, m_healthBarHeight,
+            0, 0, 0.0f,
+            m_healthBarBgColor.x, m_healthBarBgColor.y, m_healthBarBgColor.z, m_healthBarBgColor.w);
+
+        // Hitung health percentage
+        float healthPercent = m_monitorHealthMax > 0
+            ? (float)m_monitorHealthCurrent / (float)m_monitorHealthMax
+            : 0.0f;
+        healthPercent = (std::max)(0.0f, (std::min)(1.0f, healthPercent));
+
+        // Foreground Bar (Health)
+        float barWidth = m_healthBarWidth * healthPercent;
+
+        // Determine bar color
+        DirectX::XMFLOAT4 barColor = m_healthBarFgColor;
+
+        // Jika sedang damage flash, gunakan warna merah
+        if (m_damageFlashTimer > 0.0f)
+        {
+            float flashAlpha = m_damageFlashTimer / m_damageFlashDuration;
+            barColor.x = m_healthBarFgColor.x + (m_healthBarDmgColor.x - m_healthBarFgColor.x) * flashAlpha;
+            barColor.y = m_healthBarFgColor.y + (m_healthBarDmgColor.y - m_healthBarFgColor.y) * flashAlpha;
+            barColor.z = m_healthBarFgColor.z + (m_healthBarDmgColor.z - m_healthBarFgColor.z) * flashAlpha;
+        }
+        else
+        {
+            // Gradient warna berdasarkan health
+            if (healthPercent > 0.5f)
+            {
+                // Green
+                barColor = { 0.0f, 1.0f, 0.0f, 1.0f };
+            }
+            else if (healthPercent > 0.25f)
+            {
+                // Yellow (interpolasi)
+                float t = (healthPercent - 0.25f) / 0.25f;
+                barColor = { t, 1.0f, 0.0f, 1.0f };
+            }
+            else
+            {
+                // Red
+                barColor = { 1.0f, 0.0f, 0.0f, 1.0f };
+            }
+        }
+
+        // Render bar
+        m_primitive->Rect(healthBarX, healthBarY, barWidth, m_healthBarHeight,
+            0, 0, 0.0f,
+            barColor.x, barColor.y, barColor.z, barColor.w);
+    }
+
+    // ============================================
+    // [EXISTING] RENDER SPRITE & TEXT
     // ============================================
     bool isLockActive = (m_animState == TerminalAnimState::SYSTEM_LOCK);
     bool isWarningPhase = (m_lockPhase == LockPhase::WARNING);
-
     bool showSprite = (isLockActive && !isWarningPhase) || m_debugShowLock;
-    bool showText = (!isLockActive) || isWarningPhase; // Teks muncul di fase warning
+    bool showText = (!isLockActive) || isWarningPhase;
 
     if (showSprite)
     {
-        // [UPDATE] MENGGUNAKAN UKURAN ASLI (PIXEL)
-
-        // 1. Render Body (Bawah) - Asli: 296 x 255
+        // 1. Render Body (Bawah)
         if (m_lockBodySprite)
         {
             float baseW = 296.0f;
             float baseH = 255.0f;
-
-            // Hitung ukuran akhir berdasarkan Scale Slider
             float finalW = baseW * m_lockBodyScale;
             float finalH = baseH * m_lockBodyScale;
-
-            // Pivot tengah
             float pivotX = m_lockPos.x - (finalW / 2.0f);
             float pivotY = m_lockPos.y - (finalH / 2.0f);
-
-            // Posisi Y + Offset Animasi
             float drawY = pivotY + m_currentBodyY;
 
             m_lockBodySprite->Render(context,
@@ -355,21 +431,15 @@ void TerminalMonitor1::RenderToTexture(ID3D11DeviceContext* context, BitmapFont*
                 m_lockColor.x, m_lockColor.y, m_lockColor.z, m_lockColor.w);
         }
 
-        // 2. Render Head (Atas) - Asli: 238 x 348
+        // 2. Render Head (Atas)
         if (m_lockHeadSprite)
         {
             float baseW = 238.0f;
             float baseH = 348.0f;
-
-            // Hitung ukuran akhir berdasarkan Scale Slider
             float finalW = baseW * m_lockHeadScale;
             float finalH = baseH * m_lockHeadScale;
-
-            // Pivot tengah
             float pivotX = m_lockPos.x - (finalW / 2.0f);
             float pivotY = m_lockPos.y - (finalH / 2.0f);
-
-            // Posisi Y + Offset Animasi
             float drawY = pivotY + m_currentHeadY;
 
             m_lockHeadSprite->Render(context,
@@ -380,15 +450,9 @@ void TerminalMonitor1::RenderToTexture(ID3D11DeviceContext* context, BitmapFont*
         }
     }
 
-    // ============================================
-    // [LOGIC RENDER TEXT & CURSOR]
-    // Tampilkan jika Sprite TIDAK aktif, ATAU jika kita mau debug numpuk (opsional)
-    // Di sini saya buat Text hilang jika Lock Screen aktif (supaya clean)
-    // ============================================
     if (showText)
     {
-        // Render Text Cache
-        // Pastikan m_displayLines tidak di-clear di ShowLockScreen agar teks tetap ada
+        // Render Text & Cursor
         for (size_t i = 0; i < m_displayLines.size(); ++i)
         {
             font->Draw(
@@ -399,13 +463,15 @@ void TerminalMonitor1::RenderToTexture(ID3D11DeviceContext* context, BitmapFont*
                 m_cursorColor.x, m_cursorColor.y, m_cursorColor.z, 1.0f);
         }
 
-        // Render Cursor
         if (m_cursor && m_primitive)
         {
             m_cursor->SetColor(m_cursorColor.x, m_cursorColor.y, m_cursorColor.z, m_cursorColor.w);
             m_cursor->Render(context, m_primitive.get());
         }
     }
+
+    // [PENTING] Render primitives batch (healthbar + cursor)
+    if (m_primitive) m_primitive->Render(context);
 
     // Restore State
     context->OMSetRenderTargets(1, &prevRTV, prevDSV);

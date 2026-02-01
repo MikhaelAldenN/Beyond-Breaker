@@ -106,8 +106,10 @@ Boss::Boss()
     m_fileProjectiles.reserve(100);
     m_stateMachine.Initialize(new BossIntroState(), this);
 
-    m_monitor1Health = 5;
-    m_monitor1Destroyed = false;
+    m_monitor1Health = MAX_MONITOR1_HEALTH;
+
+    // Kirim Max Health yang BENAR (25) ke terminal, bukan 5
+    m_terminal1.SetMonitorHealth(m_monitor1Health, MAX_MONITOR1_HEALTH);
 }
 
 Boss::~Boss() {}
@@ -868,4 +870,23 @@ void Boss::RenderWires(ModelRenderer* renderer)
 
         renderer->Draw(ShaderId::Lambert, model, color, world);
     }
+}
+
+void Boss::SetMonitor1Health(int health)
+{
+    // Clamp biar gak minus atau lebih dari Max
+    if (health < 0) health = 0;
+    if (health > MAX_MONITOR1_HEALTH) health = MAX_MONITOR1_HEALTH;
+
+    m_monitor1Health = health;
+
+    // PENTING: Update Visual Terminal dengan Max Health yang KONSISTEN
+    m_terminal1.UpdateMonitorHealth(m_monitor1Health, MAX_MONITOR1_HEALTH);
+}
+
+// Fungsi helper baru untuk SceneGameBeyond
+void Boss::DamageMonitor1(int amount)
+{
+    int newHealth = m_monitor1Health - amount;
+    SetMonitor1Health(newHealth); // Panggil Setter biar visual terupdate otomatis
 }
