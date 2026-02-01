@@ -130,3 +130,8 @@ void EnemyManager::RespawnEnemyAs(size_t index, AttackType attack, MoveDir dir, 
     std::swap(m_enemies[index], m_enemies.back());
     m_enemies.pop_back();
 }
+
+void EnemyManager::Clear()
+{
+    m_enemies.clear();
+}

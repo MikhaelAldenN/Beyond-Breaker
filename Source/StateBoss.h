@@ -235,3 +235,13 @@ private:
     const float m_duration = 8.0f;       // Total durasi fase serangan
     const float m_attackInterval = 1.5f; // Jeda antar tembakan kabel
 };
+
+// State Kosong saat Boss Mati
+class BossDeathState : public BossState
+{
+public:
+    void Enter(Boss* boss) override;
+    void Update(Boss* boss, float dt) override {} // Kosong = Tidak menyerang
+    void Exit(Boss* boss) override {}
+    std::string GetName() const override { return "DEATH"; }
+};

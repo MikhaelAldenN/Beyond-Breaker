@@ -179,3 +179,10 @@ void ItemManager::ResetAllAnimations()
 {
     for (auto& item : m_items) { if (item) item->ResetAnimation(); }
 }
+
+void ItemManager::Clear()
+{
+    m_items.clear();
+    m_itemClusterMap.clear(); // Bersihkan juga map cluster
+    m_trackingEnabled = false; // Matikan tracking magnet
+}

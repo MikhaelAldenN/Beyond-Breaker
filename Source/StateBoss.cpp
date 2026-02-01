@@ -726,3 +726,9 @@ void BossWireAttackState::Exit(Boss* boss)
     // Opsional: Kalau mau boss kembali ke pose idle spesifik
     boss->GetMonitor1()->ResetToIdle();
 }
+
+void BossDeathState::Enter(Boss* boss)
+{
+    boss->AddTerminalLog("SYSTEM FAILURE: SHUTTING DOWN...");
+    boss->ClearProjectiles(); // Hapus semua peluru boss
+}

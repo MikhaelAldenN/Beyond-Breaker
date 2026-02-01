@@ -236,6 +236,8 @@ public:
 
     // Callback: fires once on the very first damage to monitor1
     void SetOnFirstDamageCallback(std::function<void()> cb) { m_onFirstDamage = std::move(cb); }
+    void SetOnDeathCallback(std::function<void()> cb) { m_onDeath = std::move(cb); }
+
 private:
     std::function<void()> m_onFirstDamage;
     bool m_firstDamageFired = false;
@@ -301,4 +303,6 @@ private:
     // Object Pool
     static const int MAX_WIRES = 10;
     std::vector<ElectricWire> m_wires;
+
+    std::function<void()> m_onDeath;
 };

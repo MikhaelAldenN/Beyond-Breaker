@@ -160,6 +160,8 @@ public:
     void SetHighlight(int index) { m_debugHighlightIndex = index; }
     int GetHighlight() const { return m_debugHighlightIndex; }
 
+    void Clear();
+
 private:
     std::vector<std::unique_ptr<Item>> m_items;
     ID3D11Device* m_deviceRef = nullptr;

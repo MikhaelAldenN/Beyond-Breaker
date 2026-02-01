@@ -476,7 +476,7 @@ public:
     void RenderDebug(ShapeRenderer* renderer);
     void RespawnEnemyAs(size_t index, AttackType attack, MoveDir dir = MoveDir::None, float minX = 0, float maxX = 0, float minZ = 0, float maxZ = 0);
     void SpawnEnemy(const EnemySpawnConfig& config);
-
+    void Clear();
     std::vector<std::unique_ptr<Enemy>>& GetEnemies() { return m_enemies; }
 
 private:

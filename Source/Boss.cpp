@@ -959,4 +959,22 @@ void Boss::DamageMonitor1(int amount)
 
     int newHealth = m_monitor1Health - amount;
     SetMonitor1Health(newHealth);
+
+    // [LOGIKA BARU] Cek Kematian
+    if (m_monitor1Health <= 0 && !m_monitor1Destroyed)
+    {
+        m_monitor1Destroyed = true;
+
+        // 1. Sembunyikan Monitor 1 (Lempar jauh-jauh)
+        if (auto* mon1 = GetPart("monitor1")) {
+            mon1->useFloating = false;
+            mon1->position = { -9999.0f, -9999.0f, -9999.0f };
+        }
+
+        // 2. Ganti State jadi Death (Stop Serangan)
+        ChangeState(new BossDeathState());
+
+        // 3. Panggil Callback ke Scene
+        if (m_onDeath) m_onDeath();
+    }
 }
