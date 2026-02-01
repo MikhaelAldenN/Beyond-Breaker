@@ -10,7 +10,6 @@
 void WindowManager::Update(float dt)
 {
     // [OPTIMISASI 1] Hanya update Z-Order jika ditandai 'dirty'
-    // Jangan panggil SetWindowPos setiap frame! OS akan ngelag.
     if (m_dirtyPriority)
     {
         EnforceWindowPriorities();
@@ -20,10 +19,17 @@ void WindowManager::Update(float dt)
 
 void WindowManager::EnforceWindowPriorities()
 {
-    // 1. Filter valid game windows
+    // =========================================================
+    // [OPTIMISASI KRUSIAL] EARLY EXIT
+    // Jangan process jika tidak ada windows
+    // =========================================================
+    if (windows.empty())
+        return;
+
     std::vector<GameWindow*> sortedWindows;
     sortedWindows.reserve(windows.size());
 
+    // 1. Filter valid game windows (SINGLE PASS)
     for (auto& win : windows)
     {
         if (win.get() != debugWindow && win->GetPriority() < 100)
@@ -32,41 +38,59 @@ void WindowManager::EnforceWindowPriorities()
         }
     }
 
-    // 2. Sort by priority (Ascending: Priority 0 paling atas, makin besar makin di belakang)
-    // Note: Logika sort kamu sebelumnya Ascending, pastikan ini sesuai keinginanmu.
+    // =========================================================
+    // [OPTIMISASI 2] JIKA SORTED TIDAK BERUBAH, SKIP SETWINDOWPOS
+    // Bandingkan dengan cache sebelumnya
+    // =========================================================
+    if (m_lastSortedOrder == sortedWindows)
+        return; // Tidak ada perubahan, skip SetWindowPos
+
+    m_lastSortedOrder = sortedWindows; // Update cache
+
+    // 2. Sort by priority
     std::sort(sortedWindows.begin(), sortedWindows.end(),
         [](GameWindow* a, GameWindow* b) {
             return a->GetPriority() < b->GetPriority();
         });
 
-    // =========================================================
-    // [MODIFIKASI] SMART TOPMOST
-    // =========================================================
 #ifdef _DEBUG
-    // MODE DEBUG: Matikan TopMost agar tidak menghalangi debugging
-    // Window akan berperilaku normal (bisa ditumpuk window lain)
     HWND hInsertAfter = HWND_NOTOPMOST;
 #else
-    // MODE RELEASE: Nyalakan TopMost (Sesuai desain game)
-    // Window akan selalu di atas aplikasi lain
     HWND hInsertAfter = HWND_TOPMOST;
 #endif
+
     // =========================================================
+    // [OPTIMISASI 3] BATCH SETWINDOWPOS CALLS
+    // Gunakan DeferWindowPos untuk batch multiple SetWindowPos sekaligus
+    // =========================================================
+    HDWP hDWP = BeginDeferWindowPos(sortedWindows.size());
 
-    // Gunakan flag SWP_NOACTIVATE agar tidak mencuri fokus keyboard
-    UINT uFlags = SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOREDRAW;
-
-    for (GameWindow* win : sortedWindows)
+    if (hDWP)
     {
-        SetWindowPos(win->GetHWND(), hInsertAfter, 0, 0, 0, 0, uFlags);
+        UINT uFlags = SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOREDRAW;
 
-        // Chain Z-Order: Window berikutnya diletakkan DI BAWAH window ini.
-        hInsertAfter = win->GetHWND();
+        for (GameWindow* win : sortedWindows)
+        {
+            hDWP = DeferWindowPos(hDWP, win->GetHWND(), hInsertAfter, 0, 0, 0, 0, uFlags);
+            hInsertAfter = win->GetHWND();
+        }
+
+        EndDeferWindowPos(hDWP);
+    }
+    else
+    {
+        // Fallback jika DeferWindowPos gagal
+        UINT uFlags = SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOREDRAW;
+        for (GameWindow* win : sortedWindows)
+        {
+            SetWindowPos(win->GetHWND(), hInsertAfter, 0, 0, 0, 0, uFlags);
+            hInsertAfter = win->GetHWND();
+        }
     }
 
     if (debugWindow && debugWindow->IsVisible())
     {
-        SetWindowPos(debugWindow->GetHWND(), HWND_TOPMOST, 0, 0, 0, 0, uFlags);
+        SetWindowPos(debugWindow->GetHWND(), HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOREDRAW);
     }
 }
 
@@ -74,14 +98,15 @@ void WindowManager::RenderAll(float dt, Scene* scene)
 {
     if (!scene) return;
 
-    // 1. UPDATE DATA IMGUI (Cukup sekali per frame)
     scene->DrawGUI();
 
     bool isBeyondScene = (dynamic_cast<SceneGameBeyond*>(scene) != nullptr);
     auto context = Graphics::Instance().GetDeviceContext();
     auto mainWindow = Framework::Instance()->GetMainWindow();
 
-    // 2. RENDER WINDOW
+    // =========================================================
+    // [OPTIMISASI 1] CACHE MAIN WINDOW POINTER
+    // =========================================================
     for (auto& win : windows)
     {
         if (!win->IsVisible()) continue;
@@ -91,7 +116,6 @@ void WindowManager::RenderAll(float dt, Scene* scene)
             continue;
         }
 
-        // [OPTIMISASI KECIL] Warna background hitam murni lebih cepat diproses
         if (isBeyondScene) {
             win->BeginRender(0.1f, 0.1f, 0.15f);
         }
@@ -100,10 +124,6 @@ void WindowManager::RenderAll(float dt, Scene* scene)
         }
 
         scene->OnResize(win->GetWidth(), win->GetHeight());
-
-        // Render Scene 
-        // Note: Pastikan Scene::Render melakukan Frustum Culling! 
-        // Jika kamera window melihat tembok kosong, jangan draw Boss-nya.
         scene->Render(dt, win->GetCamera());
 
         // Render ImGui HANYA di Main Window
@@ -112,11 +132,7 @@ void WindowManager::RenderAll(float dt, Scene* scene)
             ImGuiRenderer::Render(context);
         }
 
-        // [OPTIMISASI 2 - KRUSIAL]
-        // Hanya Main Window yang boleh Sync Interval 1 (VSync).
-        // Window pecahan (anak) harus 0 (Immediate) agar tidak saling menunggu.
         int syncInterval = 0;
-
         win->EndRender(syncInterval);
     }
 }
@@ -154,7 +170,6 @@ void WindowManager::DestroyWindow(GameWindow* targetWindow)
             }),
         windows.end());
 
-    // Trigger re-sort
     MarkPriorityDirty();
 }
 
@@ -162,4 +177,5 @@ void WindowManager::ClearAll()
 {
     std::lock_guard<std::mutex> lock(m_windowsMutex);
     windows.clear();
+    m_lastSortedOrder.clear(); // [OPTIMISASI] Clear cache juga
 }

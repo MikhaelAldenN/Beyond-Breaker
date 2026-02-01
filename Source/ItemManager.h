@@ -135,7 +135,7 @@ public:
     ItemManager();
     ~ItemManager();
 
-    void Initialize(ID3D11Device* device);
+    void Initialize(ID3D11Device* device, bool skipLevelSpawns = false);
     void Update(float elapsedTime, Camera* camera);
     void Render(ModelRenderer* renderer);
     void RenderDebug(ShapeRenderer* renderer);

@@ -59,7 +59,6 @@ private:
 
     // Window System
     std::unique_ptr<WindowTrackingSystem> m_windowSystem;
-
     std::unique_ptr<EnemyManager> m_enemyManager;
 
     // States
@@ -94,4 +93,6 @@ private:
 
     std::unique_ptr<ItemManager> m_itemManager;
     std::unique_ptr<CollisionManager> m_collisionManager;
+
+    bool m_enableItemWindows = false;
 };

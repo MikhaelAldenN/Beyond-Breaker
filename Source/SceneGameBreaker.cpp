@@ -54,7 +54,7 @@ SceneGameBreaker::SceneGameBreaker()
     m_enemyManager->Initialize(Graphics::Instance().GetDevice());
 
     m_itemManager = std::make_unique<ItemManager>();
-    m_itemManager->Initialize(Graphics::Instance().GetDevice());
+    m_itemManager->Initialize(Graphics::Instance().GetDevice(), false);
 
     m_collisionManager = std::make_unique<CollisionManager>();
     m_collisionManager->Initialize(player, m_stage.get(), blockManager.get(), m_enemyManager.get(), m_itemManager.get());

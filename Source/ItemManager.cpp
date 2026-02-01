@@ -5,15 +5,24 @@ using namespace DirectX;
 ItemManager::ItemManager() {}
 ItemManager::~ItemManager() { m_items.clear(); }
 
-void ItemManager::Initialize(ID3D11Device* device)
+void ItemManager::Initialize(ID3D11Device* device, bool skipLevelSpawns)
 {
     m_deviceRef = device;
     m_items.clear();
 
-    for (const auto& data : ItemLevelData::Spawns)
+    // =========================================================
+    // [BARU] Conditional spawn dari level data
+    // =========================================================
+    if (!skipLevelSpawns)
     {
-        SpawnItem(data);
+        // SceneGameBreaker: Spawn semua item dari level data
+        for (const auto& data : ItemLevelData::Spawns)
+        {
+            SpawnItem(data);
+        }
     }
+    // SceneGameBeyond: skipLevelSpawns = true, jadi tidak spawn apapun
+    // Item hanya spawn on-demand saat enemy mati
 }
 
 void ItemManager::SpawnItem(const ItemSpawnData& data)

@@ -1,7 +1,7 @@
 #include "WindowTrackingSystem.h"
 #include "WindowManager.h"
 #include <SDL3/SDL.h>
-#include <windows.h> // Untuk GetSystemMetrics
+#include <windows.h>
 #include <cmath>
 
 using namespace DirectX;
@@ -17,7 +17,6 @@ WindowTrackingSystem::~WindowTrackingSystem()
 
 void WindowTrackingSystem::ClearAll()
 {
-    // Clean up windows via WindowManager
     for (auto& tracked : m_trackedWindows)
     {
         if (tracked->window)
@@ -32,10 +31,8 @@ void WindowTrackingSystem::ClearAll()
 bool WindowTrackingSystem::AddTrackedWindow(
     const TrackedWindowConfig& config,
     std::function<DirectX::XMFLOAT3()> getTargetPos,
-    std::function<DirectX::XMFLOAT2()> getTargetSize // Parameter baru
-) 
+    std::function<DirectX::XMFLOAT2()> getTargetSize)
 {
-    // 1. Create Window via Singleton Manager
     GameWindow* window = WindowManager::Instance().CreateGameWindow(
         config.title.c_str(),
         config.width,
@@ -45,7 +42,6 @@ bool WindowTrackingSystem::AddTrackedWindow(
     if (!window) return false;
 
     window->SetPriority(config.priority);
-    
     WindowManager::Instance().MarkPriorityDirty();
 
     if (config.fpsLimit > 0.0f)
@@ -53,14 +49,11 @@ bool WindowTrackingSystem::AddTrackedWindow(
         window->SetTargetFPS(config.fpsLimit);
     }
 
-    // Hardcoded logic: Player window usually shouldn't be draggable by mouse
     if (config.name == "player") window->SetDraggable(false);
 
-    // 2. Create Camera for this window
     auto camera = std::make_shared<Camera>();
     window->SetCamera(camera.get());
 
-    // 3. Setup Tracked Object
     auto tracked = std::make_unique<TrackedWindow>();
     tracked->name = config.name;
     tracked->window = window;
@@ -74,7 +67,6 @@ bool WindowTrackingSystem::AddTrackedWindow(
     tracked->state.actualW = config.width;
     tracked->state.actualH = config.height;
 
-    // 4. Initial Position Setup
     if (getTargetPos)
     {
         XMFLOAT3 initialPos = getTargetPos();
@@ -104,7 +96,9 @@ TrackedWindow* WindowTrackingSystem::GetTrackedWindow(const std::string& name)
 
 void WindowTrackingSystem::Update(float dt)
 {
-    // 1. Update Screen Cache (Resolusi layar mungkin berubah)
+    // =========================================================
+    // [OPTIMISASI 1] Cache Screen Dimensions dengan interval
+    // =========================================================
     m_cacheUpdateTimer += dt;
     if (m_cacheUpdateTimer >= 1.0f)
     {
@@ -113,9 +107,16 @@ void WindowTrackingSystem::Update(float dt)
         m_cacheUpdateTimer = 0.0f;
     }
 
-    // 2. Update Semua Window
+    // =========================================================
+    // [OPTIMISASI 2] Update HANYA window yang visible
+    // Jangan update window yang hidden/inactive
+    // =========================================================
     for (auto& tracked : m_trackedWindows)
     {
+        // Early skip jika window tidak visible
+        if (!tracked->window || !tracked->window->IsVisible())
+            continue;
+
         UpdateSingleWindow(dt, *tracked);
     }
 }
@@ -126,29 +127,29 @@ void WindowTrackingSystem::UpdateSingleWindow(float dt, TrackedWindow& tracked)
         return;
 
     // =========================================================
-    // STEP 1: UPDATE SIZE (Dynamic Resizing)
+    // [OPTIMISASI 3] SKIP SIZE UPDATE jika callback NULL
+    // Hemat computational cost untuk window yang size-nya fixed
     // =========================================================
     if (tracked.getTargetSizeFunc)
     {
-        // 1. Tanya Scene: "Butuh ukuran berapa?"
         XMFLOAT2 desiredSize = tracked.getTargetSizeFunc();
 
-        // 2. Lerp Size (Smoothing)
-        float tSize = min(m_followSpeed * dt, 1.0f); // Bisa pakai speed beda kalau mau
+        float tSize = min(m_followSpeed * dt, 1.0f);
         tracked.state.targetW += (desiredSize.x - tracked.state.targetW) * tSize;
         tracked.state.targetH += (desiredSize.y - tracked.state.targetH) * tSize;
 
-        // 3. Apply ke SDL Window (dengan threshold biar gak spam GPU)
         int newW = static_cast<int>(roundf(tracked.state.targetW));
         int newH = static_cast<int>(roundf(tracked.state.targetH));
 
         int deltaW = abs(newW - tracked.state.actualW);
         int deltaH = abs(newH - tracked.state.actualH);
 
-        // Update jika beda > 2 pixel agar efisien
-        if (deltaW >= 2 || deltaH >= 2)
+        // =========================================================
+        // [OPTIMISASI 4] THRESHOLD AGRESIF
+        // Dari 2px jadi 3px supaya SetWindowSize jarang dipanggil
+        // =========================================================
+        if (deltaW >= 3 || deltaH >= 3)
         {
-            // Pastikan tidak 0 atau negatif
             newW = max(10, newW);
             newH = max(10, newH);
 
@@ -158,12 +159,9 @@ void WindowTrackingSystem::UpdateSingleWindow(float dt, TrackedWindow& tracked)
         }
     }
 
-
     // =========================================================
-    // STEP 2: UPDATE POSITION (Centering Logic)
+    // STEP 2: UPDATE POSITION
     // =========================================================
-
-    // A. Hitung Target Posisi
     XMFLOAT3 targetWorldPos = tracked.getTargetPositionFunc();
     targetWorldPos.x += tracked.trackingOffset.x;
     targetWorldPos.y += tracked.trackingOffset.y;
@@ -172,38 +170,33 @@ void WindowTrackingSystem::UpdateSingleWindow(float dt, TrackedWindow& tracked)
     float targetScreenX, targetScreenY;
     WorldToScreenPos(targetWorldPos, targetScreenX, targetScreenY);
 
-    float currentW = (float)tracked.window->GetWidth();
-    float currentH = (float)tracked.window->GetHeight();
-
     float destX = targetScreenX - (tracked.window->GetWidth() * 0.5f);
     float destY = targetScreenY - (tracked.window->GetHeight() * 0.5f);
 
-    // B. Smooth Movement (Lerp)
     float t = min(m_followSpeed * dt, 1.0f);
     tracked.state.targetX += (destX - tracked.state.targetX) * t;
     tracked.state.targetY += (destY - tracked.state.targetY) * t;
 
-    // C. Apply ke SDL Window (dengan threshold optimization)
     int newX = static_cast<int>(roundf(tracked.state.targetX));
     int newY = static_cast<int>(roundf(tracked.state.targetY));
 
     int deltaX = abs(newX - tracked.state.actualX);
     int deltaY = abs(newY - tracked.state.actualY);
 
-    if (deltaX >= 2 || deltaY >= 2) // Threshold 2 pixel
+    // =========================================================
+    // [OPTIMISASI 4] THRESHOLD AGRESIF untuk Position juga
+    // =========================================================
+    if (deltaX >= 3 || deltaY >= 3)
     {
         SDL_SetWindowPosition(tracked.window->GetSDLWindow(), newX, newY);
         tracked.state.actualX = newX;
         tracked.state.actualY = newY;
     }
 
-    // D. Update Camera Projection (Agar perspektif tetap benar)
+    // D. Update Camera Projection
     UpdateOffCenterProjection(tracked.camera.get(), tracked.window, GetUnifiedCameraHeight());
 }
 
-// =========================================================
-// MATH HELPERS
-// =========================================================
 void WindowTrackingSystem::GetScreenDimensions(int& outWidth, int& outHeight)
 {
     if (m_cachedScreenWidth > 0) {
@@ -223,8 +216,6 @@ void WindowTrackingSystem::WorldToScreenPos(const DirectX::XMFLOAT3& worldPos, f
     int screenW, screenH;
     GetScreenDimensions(screenW, screenH);
 
-    // Konversi sederhana: Tengah layar + (Posisi World * Ratio)
-    // Note: Z world menjadi Y layar (negatif) karena coordinate system game ini
     outScreenX = (screenW * 0.5f) + (worldPos.x * m_pixelToUnitRatio);
     outScreenY = (screenH * 0.5f) - (worldPos.z * m_pixelToUnitRatio);
 }
@@ -234,7 +225,6 @@ float WindowTrackingSystem::GetUnifiedCameraHeight()
     int screenW, screenH;
     GetScreenDimensions(screenW, screenH);
     float halfFovTan = tanf(XMConvertToRadians(m_fov) * 0.5f);
-    // Rumus trigonometri untuk mencari ketinggian kamera agar 1 unit world = X pixel layar
     return (screenH * 0.5f) / (m_pixelToUnitRatio * halfFovTan);
 }
 
@@ -257,7 +247,6 @@ void WindowTrackingSystem::UpdateOffCenterProjection(Camera* targetCam, GameWind
     float halfHeight = nearZ * halfFovTan;
     float halfWidth = halfHeight * ((float)screenW / screenH);
 
-    // Hitung frustum offset berdasarkan posisi window di layar fisik
     double screenWd = (double)screenW;
     double screenHd = (double)screenH;
 
@@ -275,22 +264,18 @@ void WindowTrackingSystem::UpdateOffCenterProjection(Camera* targetCam, GameWind
 
 void WindowTrackingSystem::RemoveTrackedWindow(const std::string& name)
 {
-    // 1. Cek apakah window ada di lookup table
     auto it = m_windowLookup.find(name);
-    if (it == m_windowLookup.end()) return; // Tidak ketemu, keluar.
+    if (it == m_windowLookup.end()) return;
 
     TrackedWindow* trackedInfo = it->second;
 
-    // 2. Hancurkan Window Fisik via WindowManager
     if (trackedInfo && trackedInfo->window)
     {
         WindowManager::Instance().DestroyWindow(trackedInfo->window);
     }
 
-    // 3. Hapus dari Map Lookup DULUAN (Penting!)
     m_windowLookup.erase(it);
 
-    // 4. Hapus dari Vector (yang memegang ownership/unique_ptr)
     m_trackedWindows.erase(
         std::remove_if(m_trackedWindows.begin(), m_trackedWindows.end(),
             [&name](const std::unique_ptr<TrackedWindow>& ptr) {
@@ -302,57 +287,40 @@ void WindowTrackingSystem::RemoveTrackedWindow(const std::string& name)
 bool WindowTrackingSystem::AddPooledTrackedWindow(
     const TrackedWindowConfig& config,
     std::function<DirectX::XMFLOAT3()> getTargetPos,
-    std::function<DirectX::XMFLOAT2()> getTargetSize
-)
+    std::function<DirectX::XMFLOAT2()> getTargetSize)
 {
-    // 1. CEK POOL: Apakah ada window bekas yang bisa dipakai?
     if (!m_windowPool.empty())
     {
-        // AMBIL SATU DARI GUDANG
         auto recycled = std::move(m_windowPool.back());
         m_windowPool.pop_back();
 
-        // RESET DATANYA
-        recycled->name = config.name; // Update nama (misal dari "file_5" jadi "file_9")
+        recycled->name = config.name;
         recycled->trackingOffset = config.trackingOffset;
         recycled->getTargetPositionFunc = getTargetPos;
         recycled->getTargetSizeFunc = getTargetSize;
 
-        // Reset Camera & Title
         recycled->window->SetTitle(config.title.c_str());
 
-        // PENTING: Update FPS Limit (jika projectile baru punya setting beda)
         if (config.fpsLimit > 0.0f) recycled->window->SetTargetFPS(config.fpsLimit);
 
-        // TAMPILKAN KEMBALI WINDOW (Unhide)
         SDL_ShowWindow(recycled->window->GetSDLWindow());
 
-        // Force update posisi frame ini juga biar nggak "teleport" visualnya
-        if (getTargetPos) {
-            // (Opsional) Reset posisi window ke target langsung biar smooth
-             // ... logic reset posisi ...
-        }
-
-        // Masukkan kembali ke daftar AKTIF
         m_windowLookup[config.name] = recycled.get();
         m_trackedWindows.push_back(std::move(recycled));
 
         return true;
     }
 
-    // 2. JIKA POOL KOSONG: Buat Baru (Standard Logic)
     return AddTrackedWindow(config, getTargetPos, getTargetSize);
 }
 
 void WindowTrackingSystem::ReleasePooledWindow(const std::string& name)
 {
-    // 1. Cari window di daftar aktif
     auto it = m_windowLookup.find(name);
     if (it == m_windowLookup.end()) return;
 
     TrackedWindow* ptr = it->second;
 
-    // 2. Cari unique_ptr-nya di vector m_trackedWindows
     auto vecIt = std::find_if(m_trackedWindows.begin(), m_trackedWindows.end(),
         [&name](const std::unique_ptr<TrackedWindow>& p) {
             return p->name == name;
@@ -360,13 +328,8 @@ void WindowTrackingSystem::ReleasePooledWindow(const std::string& name)
 
     if (vecIt != m_trackedWindows.end())
     {
-        // 3. SEMBUNYIKAN WINDOW (Jangan Destroy!)
         SDL_HideWindow(ptr->window->GetSDLWindow());
-
-        // 4. PINDAHKAN KE POOL (Gudang)
         m_windowPool.push_back(std::move(*vecIt));
-
-        // 5. Hapus dari daftar aktif
         m_trackedWindows.erase(vecIt);
         m_windowLookup.erase(it);
     }

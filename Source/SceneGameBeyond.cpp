@@ -57,8 +57,8 @@ SceneGameBeyond::SceneGameBeyond()
     m_blockManager->ActivateFormationMode();
 
     m_blockManager->shieldSettings.Enabled = true;
-    m_blockManager->shieldSettings.MaxTetherDistance = 8.0f; // Jarak tameng agak jauh dikit
-    m_blockManager->shootSettings.ProjectileSpeed = 20.0f;   // Kecepatan peluru
+    m_blockManager->shieldSettings.MaxTetherDistance = 8.0f;
+    m_blockManager->shootSettings.ProjectileSpeed = 20.0f;
 
     for (int i = 0; i < 20; ++i) m_blockManager->SpawnAllyBlock(m_player.get());
 
@@ -83,35 +83,36 @@ SceneGameBeyond::SceneGameBeyond()
 
     if (m_boss && m_enemyManager)
     {
-        m_boss->SetEnemyManager(m_enemyManager.get()); // Pass pointer agar Boss bisa spawn musuh
+        m_boss->SetEnemyManager(m_enemyManager.get());
     }
 
-    // [BARU] 1. Setup Item Manager (Agar item drop berfungsi)
+    // =========================================================
+    //  MATIKAN ITEM MANAGER INITIALIZATION
+    // =========================================================
     m_itemManager = std::make_unique<ItemManager>();
-    m_itemManager->Initialize(Graphics::Instance().GetDevice());
+    m_itemManager->Initialize(Graphics::Instance().GetDevice(), true);
 
     // [BARU] 2. Setup Collision Manager
     m_collisionManager = std::make_unique<CollisionManager>();
 
     // [UPDATE] Tambahkan m_boss.get() di parameter terakhir
+    // Note: m_itemManager.get() = nullptr sekarang, tapi collision manager bisa handle
     m_collisionManager->Initialize(
         m_player.get(),
         nullptr,             // Stage null
         m_blockManager.get(),
         m_enemyManager.get(),
-        m_itemManager.get(),
-        m_boss.get()         // <--- INI PARAMETER BARU
+        nullptr,             //  m_itemManager.get() -> nullptr
+        m_boss.get()
     );
 
     // [OPSIONAL] Callback efek visual saat Player kena Hit
     m_collisionManager->SetOnPlayerHitCallback([this]() {
         if (m_player) {
-            // Trigger efek kaca pecah kecil saat player kena damage
             auto pPos = m_player->GetPosition();
             WindowShatterManager::Instance().TriggerExplosion({ pPos.x, pPos.z }, 4);
         }
         });
-
 }
 
 // =========================================================
@@ -339,27 +340,31 @@ void SceneGameBeyond::UpdateEnemyWindows()
     const auto& enemies = m_enemyManager->GetEnemies();
     size_t enemyCount = enemies.size();
 
-    // 1. SPAWN WINDOW BARU (Untuk musuh yang ada)
+    // === PASS 1: SPAWN WINDOW BARU ===
     for (size_t i = 0; i < enemyCount; ++i)
     {
         std::string winID = "enemy_view_" + std::to_string(i);
 
         if (m_windowSystem->GetTrackedWindow(winID) == nullptr)
         {
-            // ... (Kode AddTrackedWindow yang kamu miliki sebelumnya) ...
+            const size_t idx = i;
+            EnemyManager* rawEM = m_enemyManager.get(); // Capture raw pointer (aman karena scene masih hidup)
+
             m_windowSystem->AddTrackedWindow(
                 { winID, "Enemy Signal " + std::to_string(i), 150, 150, 2, { 0.0f, 0.0f, 0.0f } },
-                [this, i]() -> DirectX::XMFLOAT3 {
-                    if (!m_enemyManager) return { 0,0,0 };
-                    const auto& curEnemies = m_enemyManager->GetEnemies();
-                    if (i >= curEnemies.size() || !curEnemies[i]) return { 0,0,0 };
 
-                    auto pos = curEnemies[i]->GetPosition();
+                [rawEM, idx, this]() -> DirectX::XMFLOAT3 {
+                    const auto& curEnemies = rawEM->GetEnemies();
+                    if (idx >= curEnemies.size() || !curEnemies[idx])
+                        return { 0, 0, 0 };
+
+                    auto pos = curEnemies[idx]->GetPosition();
                     pos.x += m_enemyTrackOffset.x;
                     pos.y += m_enemyTrackOffset.y;
                     pos.z += m_enemyTrackOffset.z;
                     return pos;
                 },
+
                 [this]() -> DirectX::XMFLOAT2 {
                     float w = 150 + m_enemySizeOffset.x;
                     float h = 150 + m_enemySizeOffset.y;
@@ -369,24 +374,23 @@ void SceneGameBeyond::UpdateEnemyWindows()
         }
     }
 
-    // 2. CLEANUP WINDOW (Untuk musuh yang sudah mati)
-    // Kita cek window dengan ID "enemy_view_X". Jika X >= enemyCount, berarti musuhnya sudah tidak ada.
-    // Kita looping agak lebih dari enemyCount untuk memastikan window sisa (bekas musuh mati) terhapus.
+    // === PASS 2: CLEANUP ===
+    static size_t lastEnemyCount = 0;
 
-    // Misal: Tadinya ada 5 musuh (0-4). Musuh mati 1, sisa 4 (0-3).
-    // Window "enemy_view_4" harus dihapus.
-
-    int maxCheck = enemyCount + 5; // Cek sedikit di atas jumlah sekarang untuk cleanup sisa
-    for (int i = enemyCount; i < maxCheck; ++i)
+    if (enemyCount < lastEnemyCount)
     {
-        std::string winID = "enemy_view_" + std::to_string(i);
-        if (m_windowSystem->GetTrackedWindow(winID) != nullptr)
+        for (size_t i = enemyCount; i < lastEnemyCount + 2; ++i)
         {
-            m_windowSystem->RemoveTrackedWindow(winID);
+            std::string winID = "enemy_view_" + std::to_string(i);
+            if (m_windowSystem->GetTrackedWindow(winID) != nullptr)
+            {
+                m_windowSystem->RemoveTrackedWindow(winID);
+            }
         }
     }
-}
 
+    lastEnemyCount = enemyCount;
+}
 void SceneGameBeyond::UpdateItemWindows()
 {
     if (!m_itemManager || !m_windowSystem) return;
