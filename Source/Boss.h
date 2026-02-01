@@ -238,6 +238,8 @@ public:
     void SetOnFirstDamageCallback(std::function<void()> cb) { m_onFirstDamage = std::move(cb); }
     void SetOnDeathCallback(std::function<void()> cb) { m_onDeath = std::move(cb); }
 
+    bool m_isSystemShutdown = false;
+
 private:
     std::function<void()> m_onFirstDamage;
     bool m_firstDamageFired = false;
@@ -305,4 +307,5 @@ private:
     std::vector<ElectricWire> m_wires;
 
     std::function<void()> m_onDeath;
+
 };

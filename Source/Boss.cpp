@@ -416,11 +416,15 @@ void Boss::RenderScreens(ModelRenderer* renderer)
         };
 
 
-    if (m_screenQuad && HasPart("monitor2"))
+    if (m_screenQuad && HasPart("monitor2") && !m_isSystemShutdown)
+    {
         RenderScreen(GetPart("monitor2"), m_screenQuad, m_screen2Config, m_terminal.GetTexture());
+    }
 
+    // Logic Monitor 1 (Main Head) biarkan saja (karena dia hancur/hilang lewat logika m_monitor1Destroyed)
     if (m_screenQuad1 && HasPart("monitor1"))
         RenderScreen(GetPart("monitor1"), m_screenQuad1, m_screen1Config, m_terminal1.GetTexture());
+
 }
 
 void Boss::RenderProjectiles(ModelRenderer* renderer, Camera* camera)
@@ -956,6 +960,8 @@ void Boss::DamageMonitor1(int amount)
         m_firstDamageFired = true;
         m_onFirstDamage();
     }
+
+    m_isSystemShutdown = true;
 
     int newHealth = m_monitor1Health - amount;
     SetMonitor1Health(newHealth);

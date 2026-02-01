@@ -88,58 +88,61 @@ SceneGameBeyond::SceneGameBeyond()
 
         m_boss->SetOnDeathCallback([this]() {
 
-            // 1. Clear Entities & Sub-Windows
+            // 1. Bersihkan Entity (Game Logic)
             if (m_enemyManager) m_enemyManager->Clear();
             if (m_blockManager) m_blockManager->ClearBlocks();
             if (m_itemManager) m_itemManager->Clear();
             if (m_boss) m_boss->ClearProjectiles();
 
-            // [PENTING] Hapus Tracking Windows (CPU, Monitor2, dll) agar layar bersih
+            // 2. Bersihkan Sub-Windows Tracking
             if (m_windowSystem)
             {
-                // Hapus window boss parts
                 m_windowSystem->RemoveTrackedWindow("cpu");
                 m_windowSystem->RemoveTrackedWindow("monitor2");
                 m_windowSystem->RemoveTrackedWindow("monitor3");
                 m_windowSystem->RemoveTrackedWindow("antenna");
-                // Hapus window player view jika perlu
                 m_windowSystem->RemoveTrackedWindow("player");
             }
 
-            // 2. Trigger Final Shatter
-            WindowShatterManager::Instance().TriggerExplosion({ 0, 0 }, 20);
+            // 3. Trigger Visual Shatter (Ledakan Kaca)
+            WindowShatterManager::Instance().TriggerExplosion({ 0, 0 }, 8);
             WindowShatterManager::Instance().TriggerShatter();
 
-            // 3. Restore Main Window
-            GameWindow* mainWin = Framework::Instance()->GetMainWindow();
-            if (mainWin)
+            // 4. STRATEGI WINDOW BARU
+            // A. Sembunyikan Window Utama yang Lama (Lupakan dia!)
+            GameWindow* oldMain = Framework::Instance()->GetMainWindow();
+            if (oldMain && oldMain->GetSDLWindow())
             {
-                SDL_Window* sdlWin = mainWin->GetSDLWindow();
-                if (sdlWin)
-                {
-                    // Gunakan CENTERED agar tidak nempel di pojok/player
-                    SDL_SetWindowSize(sdlWin, 1920, 1080);
-                    SDL_SetWindowPosition(sdlWin, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
-
-                    // Reset properti window
-                    SDL_SetWindowBordered(sdlWin, false);
-                    SDL_SetWindowResizable(sdlWin, false);
-                    SDL_RaiseWindow(sdlWin);
-
-                    SDL_SetWindowTitle(sdlWin, "MISSION ACCOMPLISHED");
-                }
+                SDL_HideWindow(oldMain->GetSDLWindow());
             }
 
-            // [PENTING] JANGAN matikan m_gameStarted!
-            // m_gameStarted = false; <--- HAPUS BARIS INI
-            // Biarkan true agar Render() memanggil m_boss->Render() (Full Body),
-            // bukan RenderPreShatter() (Cuma Monitor 1).
+            // B. Buat Window BARU yang Segar
+            // Kita buat ukuran 1920x1080 (atau sesuai resolusi yang diinginkan)
+            GameWindow* newWin = WindowManager::Instance().CreateGameWindow("MISSION ACCOMPLISHED", 1920, 1080);
+
+            if (newWin)
+            {
+                SDL_Window* sdlWin = newWin->GetSDLWindow();
+                if (sdlWin)
+                {
+                    // Pastikan di tengah
+                    SDL_SetWindowPosition(sdlWin, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+
+                    // Style: Borderless agar terlihat seamless
+                    SDL_SetWindowBordered(sdlWin, false);
+
+                    // Bawa ke depan
+                    SDL_RaiseWindow(sdlWin);
+                }
+
+                // C. PENTING: Pasang Kamera ke Window Baru
+                // Agar window ini merender scene game (Boss parts yang tersisa)
+                newWin->SetCamera(m_mainCamera.get());
+            }
 
             m_boss->AddTerminalLog(">> TARGET NEUTRALIZED <<");
             });
     }
-
-    
 
     m_enemyManager = std::make_unique<EnemyManager>();
 
