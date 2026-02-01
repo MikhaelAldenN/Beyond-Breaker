@@ -60,6 +60,10 @@ struct BossPart
     float cullRadius = 2.0f;
     DirectX::XMFLOAT3 cullOffset = { 0.f, 0.f, 0.f };
 
+    float shakeTimer = 0.0f;
+    float shakeIntensity = 0.0f;
+    DirectX::XMFLOAT3 shakeOffset = { 0.0f, 0.0f, 0.0f };
+
     void Update(float dt);
     void Render(ModelRenderer* renderer);
 };

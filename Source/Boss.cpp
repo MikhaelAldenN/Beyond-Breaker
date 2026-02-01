@@ -17,6 +17,24 @@ void BossPart::Update(float dt)
 {
     if (!model) return;
 
+    // [BARU] Update Shake Effect
+    if (shakeTimer > 0.0f)
+    {
+        shakeTimer -= dt;
+
+        // Random shake offset di ketiga axis
+        shakeOffset = {
+            (rand() % 100 - 50) * 0.01f * shakeIntensity,
+            (rand() % 100 - 50) * 0.01f * shakeIntensity,
+            (rand() % 100 - 50) * 0.01f * shakeIntensity
+        };
+    }
+    else
+    {
+        // Shake selesai, reset offset
+        shakeOffset = { 0.0f, 0.0f, 0.0f };
+    }
+
     // Floating Animation
     float offX = 0, offY = 0, offZ = 0;
     if (useFloating)
@@ -27,7 +45,13 @@ void BossPart::Update(float dt)
         offY = wave * floatAxis.y;
         offZ = wave * floatAxis.z;
     }
-    visualPosition = { position.x + offX, position.y + offY, position.z + offZ };
+
+    // [UPDATE] Combine floating + shake offset
+    visualPosition = {
+        position.x + offX + shakeOffset.x,
+        position.y + offY + shakeOffset.y,
+        position.z + offZ + shakeOffset.z
+    };
 
     // Build Matrix
     XMMATRIX S = XMMatrixScaling(scale.x, scale.y, scale.z);

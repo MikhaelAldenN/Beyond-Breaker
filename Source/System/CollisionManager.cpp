@@ -1206,11 +1206,14 @@ void CollisionManager::CheckBossMonitor1VsPlayer()
 
     if (distSq < (playerRadius * playerRadius))
     {
-        // [BARU] Check cooldown sebelum apply damage
         if (m_monitor1HitCooldown <= 0.0f)
         {
             m_boss->m_monitor1Health--;
-            m_monitor1HitCooldown = MONITOR1_HIT_COOLDOWN;  // Reset cooldown
+            m_monitor1HitCooldown = MONITOR1_HIT_COOLDOWN;
+
+            // [BARU] TRIGGER SHAKE!
+            monitor1->shakeTimer = 0.2f;      // Shake selama 200ms
+            monitor1->shakeIntensity = 0.5f;  // Intensity 0-1 (0.5 = sedang)
 
             std::string msg = "MONITOR1_HIT: " + std::to_string(m_boss->m_monitor1Health) + " HP REMAINING";
             m_boss->AddTerminalLog(msg);
@@ -1268,11 +1271,14 @@ void CollisionManager::CheckBossMonitor1VsBlocks()
 
         if (distSq < (blockRadius * blockRadius))
         {
-            // [BARU] Check cooldown
             if (m_monitor1HitCooldown <= 0.0f)
             {
                 m_boss->m_monitor1Health--;
                 m_monitor1HitCooldown = MONITOR1_HIT_COOLDOWN;
+
+                // [BARU] TRIGGER SHAKE!
+                monitor1->shakeTimer = 0.15f;      // Lebih pendek dari player (block lebih ringan)
+                monitor1->shakeIntensity = 0.3f;   // Lebih kecil (block impact lebih lemah)
 
                 std::string attackType = blockPtr->IsProjectile() ? "PROJECTILE" : "DIRECT";
                 std::string msg = "MONITOR1_HIT_BY_" + attackType + ": " + std::to_string(m_boss->m_monitor1Health) + " HP";
@@ -1336,11 +1342,14 @@ void CollisionManager::CheckBossMonitor1VsBlockProjectiles()
 
         if (distSq < (blockRadius * blockRadius))
         {
-            // [BARU] Check cooldown
             if (m_monitor1HitCooldown <= 0.0f)
             {
                 m_boss->m_monitor1Health--;
                 m_monitor1HitCooldown = MONITOR1_HIT_COOLDOWN;
+
+                // [BARU] TRIGGER SHAKE! (Projectile lebih kuat)
+                monitor1->shakeTimer = 0.25f;      // Lebih lama (projectile lebih kuat)
+                monitor1->shakeIntensity = 0.6f;   // Lebih intense
 
                 std::string msg = "MONITOR1_HIT_BY_PROJECTILE: " + std::to_string(m_boss->m_monitor1Health) + " HP";
                 m_boss->AddTerminalLog(msg);
