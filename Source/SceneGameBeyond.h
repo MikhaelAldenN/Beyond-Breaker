@@ -69,8 +69,6 @@ private:
     // Timers
     float m_startupTimer = 0.0f;
     float m_priorityEnforceTimer = 0.0f;
-    float m_windowUpdateTimer = 0.0f;
-    int m_windowUpdateCounter = 0;
 
     // Visuals
     std::unique_ptr<Primitive> m_primitive2D;

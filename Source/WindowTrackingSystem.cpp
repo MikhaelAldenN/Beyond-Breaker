@@ -7,22 +7,25 @@
 using namespace DirectX;
 
 // =========================================================
-// [FIX HANG] HAPUS IsStreamingActive() SEPENUHNYA.
-//
-// Fungsi ini punya bug fatal: `cacheTimer` static local
-// NEVER diincrement (tidak ada `cacheTimer += dt` di manapun).
-// Akibatnya:
-//   1. Pertama kali masuk: cached=false  jalankan FindWindowA
-//   2. Set cached=true, cacheTimer=0
-//   3. Frame berikutnya: cached=true, cacheTimer=0
-//       condition `!cached || cacheTimer > 5.0f` = false
-//       SELALU return cached result dari frame pertama
-//
-// Kalau Discord running di background saat game start,
-// result = true SELAMANYA. Semua codepath "if streaming"
-// (Sleep calls, render caps, individual SetWindowPos)
-// akan PERMANENTLY aktif.
+// [NEW] STREAMING DETECTION
 // =========================================================
+static bool IsStreamingActive()
+{
+    static bool cached = false;
+    static float cacheTimer = 0.0f;
+    static bool result = false;
+
+    if (!cached || cacheTimer > 5.0f)
+    {
+        HWND discordWnd = FindWindowA("Discord", nullptr);
+        HWND obsWnd = FindWindowA("OBSWindowClass", nullptr);
+        result = (discordWnd != nullptr) || (obsWnd != nullptr);
+        cached = true;
+        cacheTimer = 0.0f;
+    }
+
+    return result;
+}
 
 WindowTrackingSystem::WindowTrackingSystem()
 {
@@ -115,7 +118,7 @@ TrackedWindow* WindowTrackingSystem::GetTrackedWindow(const std::string& name)
 void WindowTrackingSystem::Update(float dt)
 {
     // =========================================================
-    // Cache screen dimensions  refresh setiap 1 detik
+    // [OPTIMISASI 1] Cache Screen Dimensions dengan interval
     // =========================================================
     m_cacheUpdateTimer += dt;
     if (m_cacheUpdateTimer >= 1.0f)
@@ -126,19 +129,26 @@ void WindowTrackingSystem::Update(float dt)
     }
 
     // =========================================================
-    // [FIX] Update SEMUA window setiap frame.
-    //
-    // Sebelumnya ada `maxUpdatesPerFrame = 5` yang aktif saat
-    // streaming detected (yang permanently true kalau Discord
-    // running). Itu bikin sebagian windows tidak pernah di-update
-    // posisinya, dan SwapChain mereka out-of-sync.
+    // [FIX DISCORD] BATCH UPDATES
+    // Update max 5 windows per frame saat streaming untuk prevent hang
     // =========================================================
+    bool isStreaming = IsStreamingActive();
+    int maxUpdatesPerFrame = isStreaming ? 5 : 999;
+    int updatedCount = 0;
+
     for (auto& tracked : m_trackedWindows)
     {
         if (!tracked->window || !tracked->window->IsVisible())
             continue;
 
+        // =========================================================
+        // [FIX DISCORD] SKIP EXCESS UPDATES
+        // =========================================================
+        if (updatedCount >= maxUpdatesPerFrame)
+            break;
+
         UpdateSingleWindow(dt, *tracked);
+        updatedCount++;
     }
 }
 
@@ -147,9 +157,13 @@ void WindowTrackingSystem::UpdateSingleWindow(float dt, TrackedWindow& tracked)
     if (!tracked.window || !tracked.camera || !tracked.getTargetPositionFunc)
         return;
 
-    // Threshold yang balanced untuk smooth tracking tanpa terlalu banyak SDL calls
-    const int posThreshold = 8;   // Medium threshold
-    const int sizeThreshold = 8;  // Medium threshold
+    // =========================================================
+    // [FIX DISCORD] ADAPTIVE THRESHOLDS
+    // Lebih agresif saat streaming untuk reduce update frequency
+    // =========================================================
+    bool isStreaming = IsStreamingActive();
+    int posThreshold = isStreaming ? 10 : 5;  // 10px saat streaming
+    int sizeThreshold = isStreaming ? 10 : 5; // 10px saat streaming
 
     // =========================================================
     // SIZE UPDATE
@@ -210,15 +224,13 @@ void WindowTrackingSystem::UpdateSingleWindow(float dt, TrackedWindow& tracked)
         tracked.state.actualY = newY;
 
         // =========================================================
-        // [FIX HANG] HAPUS Sleep(0) yang ada di sini.
-        //
-        // Sleep() di single-threaded game loop = yield ke OS.
-        // OS kemudian process pending messages. Tapi message queue
-        // sudah flooded dari SDL_SetWindowPosition calls.
-        // Itu creates circular wait:
-        //   Sleep  pump messages  lebih banyak position updates
-        //    lebih banyak messages  Sleep lagi  ...
+        // [FIX DISCORD] YIELD setelah SetWindowPosition
+        // Prevent tight loop yang bikin hang
         // =========================================================
+        if (isStreaming)
+        {
+            Sleep(0); // Yield CPU timeslice
+        }
     }
 
     // Update Camera Projection

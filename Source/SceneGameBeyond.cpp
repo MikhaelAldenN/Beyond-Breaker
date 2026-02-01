@@ -19,10 +19,6 @@ using namespace DirectX;
 #define PRIORITY_ENFORCE_INTERVAL 2.0f
 #define PIXEL_TO_UNIT_RATIO 40.0f
 
-// [FIX] Throttle window updates untuk mencegah hanging
-#define WINDOW_UPDATE_INTERVAL 0.033f  // ~30 FPS untuk window updates
-#define MAX_WINDOW_UPDATES_PER_FRAME 5
-
 // =========================================================
 // CONSTRUCTOR
 // =========================================================
@@ -138,7 +134,7 @@ void SceneGameBeyond::InitializeSubWindows()
 
     // 1. Player Tracking Window
     m_windowSystem->AddTrackedWindow(
-        { "player", "Player View", 300, 300, 1000, { 0.0f, 0.0f, 0.0f } },
+        { "player", "Player View", 300, 300, 1, { 0.0f, 0.0f, 0.0f } },
 
         // 1. LAMBDA POSISI (Center)
         [this]() -> DirectX::XMFLOAT3 {
@@ -225,7 +221,7 @@ void SceneGameBeyond::InitializeSubWindows()
     if (m_boss->HasPart("monitor1"))
     {
         m_windowSystem->AddTrackedWindow(
-            { "monitor1", "Boss Monitor", 340, 340, 200, { -0.3f, 0.0f, 2.1f } },
+            { "monitor1", "Boss Monitor", 340, 340, 0, { -0.3f, 0.0f, 2.1f } },
             [this]() -> DirectX::XMFLOAT3 {
                 if (m_boss) {
                     auto pos = m_boss->GetMonitorVisualPos();
@@ -240,7 +236,7 @@ void SceneGameBeyond::InitializeSubWindows()
     if (m_boss->HasPart("cpu"))
     {
         m_windowSystem->AddTrackedWindow(
-            { "cpu", "System Unit", 186, 370, 100, { -8.2f, 0.0f, 4.0f } },
+            { "cpu", "System Unit", 186, 370, 0, { -8.2f, 0.0f, 4.0f } },
             [this]() -> DirectX::XMFLOAT3 {
                 if (m_boss) {
                     auto pos = m_boss->GetCPUVisualPos();
@@ -255,7 +251,7 @@ void SceneGameBeyond::InitializeSubWindows()
     if (m_boss->HasPart("monitor2"))
     {
         m_windowSystem->AddTrackedWindow(
-            { "monitor2", "Side Monitor L", 240, 210, 300, { 0.5f, 0.0f, -0.3f } },
+            { "monitor2", "Side Monitor L", 240, 210, 4, { 0.5f, 0.0f, -0.3f } },
             [this]() -> DirectX::XMFLOAT3 {
                 if (m_boss) {
                     auto pos = m_boss->GetMonitor2VisualPos();
@@ -270,7 +266,7 @@ void SceneGameBeyond::InitializeSubWindows()
     if (m_boss->HasPart("monitor3"))
     {
         m_windowSystem->AddTrackedWindow(
-            { "monitor3", "Side Monitor R", 200, 200, 400, { 0.8f, 0.0f, 1.2f } },
+            { "monitor3", "Side Monitor R", 200, 200, 3, { 0.8f, 0.0f, 1.2f } },
             [this]() -> DirectX::XMFLOAT3 {
                 if (m_boss) {
                     auto pos = m_boss->GetMonitor3VisualPos();
@@ -285,7 +281,7 @@ void SceneGameBeyond::InitializeSubWindows()
     {
         m_windowSystem->AddTrackedWindow(
             // Config Dasar (Size dasar 220x500)
-            { "antenna", "Signal Uplink", 220, 500, 500, { 0.0f, 0.0f, 0.0f } },
+            { "antenna", "Signal Uplink", 220, 500, 5, { 0.0f, 0.0f, 0.0f } },
 
             // 1. LAMBDA POSISI (Model Pos + Offset ImGui)
             [this]() -> DirectX::XMFLOAT3 {
@@ -355,7 +351,7 @@ void SceneGameBeyond::UpdateEnemyWindows()
             EnemyManager* rawEM = m_enemyManager.get(); // Capture raw pointer (aman karena scene masih hidup)
 
             m_windowSystem->AddTrackedWindow(
-                { winID, "Enemy Signal " + std::to_string(i), 150, 150, 3000 + (int)i, { 0.0f, 0.0f, 0.0f } },
+                { winID, "Enemy Signal " + std::to_string(i), 150, 150, 2, { 0.0f, 0.0f, 0.0f } },
 
                 [rawEM, idx, this]() -> DirectX::XMFLOAT3 {
                     const auto& curEnemies = rawEM->GetEnemies();
@@ -427,7 +423,7 @@ void SceneGameBeyond::UpdateItemWindows()
         int capturedCid = cid;
 
         m_windowSystem->AddTrackedWindow(
-            { winID, "ITEM", 150, 150, 2000 + capturedCid, { 0.0f, 0.0f, 0.0f } },
+            { winID, "ITEM", 150, 150, 1, { 0.0f, 0.0f, 0.0f } },
 
             // === POSISI: Centroid dari semua item aktif di cluster ini ===
             [this, capturedCid]() -> DirectX::XMFLOAT3 {
@@ -1247,6 +1243,8 @@ DirectX::XMFLOAT3 SceneGameBeyond::GetMouseOnGround(Camera* camera)
 
     float worldX = dx / PIXEL_TO_UNIT_RATIO;
 
+    // Note: Screen Y positif ke bawah, tapi World Z positif ke atas (tergantung kamera).
+    // Biasanya untuk top-down view desktop: Y layar turun = Z world mundur.
     float worldZ = -dy / PIXEL_TO_UNIT_RATIO;
 
     return DirectX::XMFLOAT3(worldX, 0.0f, worldZ);
@@ -1257,10 +1255,7 @@ void SceneGameBeyond::UpdateProjectileWindows()
     if (!m_boss || !m_windowSystem) return;
 
     const auto& projectiles = m_boss->GetProjectiles();
-    int windowFrequency = 8; // Dinaikkan dari 4 untuk mengurangi window spawn
-
-    // [FIX] Limit maximum projectile windows untuk mencehats spam
-    const int MAX_PROJECTILE_WINDOWS = 15;
+    int windowFrequency = 4;
 
     // =========================================================
     // TAHAP 1: DATA GATHERING (MARK)
@@ -1273,16 +1268,6 @@ void SceneGameBeyond::UpdateProjectileWindows()
         {
             activeProjectileIDs.insert(p.id);
         }
-    }
-
-    // [FIX] Batasi jumlah active projectile IDs
-    if (activeProjectileIDs.size() > MAX_PROJECTILE_WINDOWS)
-    {
-        // Keep only the most recent projectiles
-        std::vector<int> sortedIDs(activeProjectileIDs.begin(), activeProjectileIDs.end());
-        std::sort(sortedIDs.begin(), sortedIDs.end(), std::greater<int>());
-        sortedIDs.resize(MAX_PROJECTILE_WINDOWS);
-        activeProjectileIDs = std::unordered_set<int>(sortedIDs.begin(), sortedIDs.end());
     }
 
     // =========================================================
@@ -1327,7 +1312,7 @@ void SceneGameBeyond::UpdateProjectileWindows()
     // =========================================================
     for (const auto& p : projectiles)
     {
-        if (p.active && (p.id % windowFrequency == 0) && activeProjectileIDs.find(p.id) != activeProjectileIDs.end())
+        if (p.active && (p.id % windowFrequency == 0))
         {
             std::string winName = "file_proj_" + std::to_string(p.id);
 
@@ -1343,7 +1328,7 @@ void SceneGameBeyond::UpdateProjectileWindows()
                         "DOWNLOADING...",
                         120,
                         120,
-                        5000 + (p.id % 4998),
+                        10,
                         { 0.0f, 0.0f, 0.0f },
                         20.0f // FPS Limit
                     },
