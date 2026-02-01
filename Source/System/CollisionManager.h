@@ -69,5 +69,5 @@ private:
     std::function<void(DirectX::XMFLOAT3)> m_onCheckpointReachCallback;
 
     float m_monitor1HitCooldown = 0.0f;
-    static constexpr float MONITOR1_HIT_COOLDOWN = 0.3f;  // 300ms cooldown
+    const float MONITOR1_HIT_COOLDOWN = 0.3f;  // 300ms cooldown antar hit
 };

@@ -72,7 +72,7 @@ static float RayCastOBB(XMVECTOR rayOrigin, XMVECTOR rayDir, float rayLength, fl
         XMConvertToRadians(wall.Rotation.y),
         XMConvertToRadians(wall.Rotation.z)
     );
-    XMMATRIX matInvRot = XMMatrixTranspose(matRot); 
+    XMMATRIX matInvRot = XMMatrixTranspose(matRot);
 
     XMVECTOR vRelOrigin = XMVectorSubtract(rayOrigin, vWallPos);
     XMVECTOR vLocalOrigin = XMVector3TransformNormal(vRelOrigin, matInvRot);
@@ -81,7 +81,7 @@ static float RayCastOBB(XMVECTOR rayOrigin, XMVECTOR rayDir, float rayLength, fl
     float r = radius;
     float minX = -wall.Scale.x - r; float maxX = wall.Scale.x + r;
     float minZ = -wall.Scale.z - r; float maxZ = wall.Scale.z + r;
-    float minY = -100.0f;           float maxY = 100.0f; 
+    float minY = -100.0f;           float maxY = 100.0f;
 
     float tMin = 0.0f;
     float tMax = rayLength;
@@ -313,7 +313,7 @@ void CollisionManager::CheckEnemyProjectilesFull(float elapsedTime)
                 finalVel.y = 0.0f;
 
                 ball->ApplyMovement(finalPos, finalVel);
-                ball->UpdatePreviousPosition(); 
+                ball->UpdatePreviousPosition();
 
                 ++it;
                 continue;
@@ -341,7 +341,7 @@ void CollisionManager::CheckStageCollision()
 
     float playerRadius = 0.5f;
     auto* moveComp = m_player->GetMovement();
-    int iterations = 4; 
+    int iterations = 4;
 
     for (int iter = 0; iter < iterations; ++iter)
     {
@@ -657,9 +657,9 @@ void CollisionManager::CheckBlockVsEnemies()
     auto& blocks = m_blockManager->GetBlocks();
 
     float blockRadius = 0.5f;
-    const float BALL_RADIUS = 0.1f;     
+    const float BALL_RADIUS = 0.1f;
     const float PADDLE_THICKNESS = 0.5f;
-    const float PADDLE_WIDTH_HALF = 0.8f; 
+    const float PADDLE_WIDTH_HALF = 0.8f;
 
     for (auto it = enemies.begin(); it != enemies.end(); )
     {
@@ -692,11 +692,11 @@ void CollisionManager::CheckBlockVsEnemies()
                 distSq = localPos.x * localPos.x + localPos.z * localPos.z;
                 combinedRadius = blockRadius + BALL_RADIUS;
             }
-            else 
+            else
             {
                 float closestX = (std::max)(-PADDLE_WIDTH_HALF, (std::min)(localPos.x, PADDLE_WIDTH_HALF));
                 float dx = localPos.x - closestX;
-                float dz = localPos.z - 0.0f; 
+                float dz = localPos.z - 0.0f;
 
                 distSq = dx * dx + dz * dz;
                 combinedRadius = blockRadius + PADDLE_THICKNESS;
@@ -714,7 +714,7 @@ void CollisionManager::CheckBlockVsEnemies()
                 {
                     if (enemy->GetType() == EnemyType::Paddle || enemy->GetType() == EnemyType::Pentagon)
                     {
-                        m_itemManager->SpawnHealAt(enemyPos);
+                        m_itemManager->SpawnHealClusterAt(enemyPos, 3);
                     }
                 }
 
@@ -836,7 +836,7 @@ void CollisionManager::CheckPlayerVsEnemies()
             distSq = localPos.x * localPos.x + localPos.z * localPos.z;
             combinedRadius = playerRadius + BALL_RADIUS;
         }
-        else 
+        else
         {
             float closestX = (std::max)(-PADDLE_WIDTH_HALF, (std::min)(localPos.x, PADDLE_WIDTH_HALF));
             float dx = localPos.x - closestX;
@@ -850,8 +850,8 @@ void CollisionManager::CheckPlayerVsEnemies()
         {
             if (m_player->IsInvincible())
             {
-                if (m_itemManager && enemy->GetType() == EnemyType::Paddle) {
-                    m_itemManager->SpawnHealAt(enemyPos);
+                if (m_itemManager && (enemy->GetType() == EnemyType::Paddle || enemy->GetType() == EnemyType::Pentagon)) {
+                    m_itemManager->SpawnHealClusterAt(enemyPos, 3);
                 }
                 it = enemies.erase(it);
                 continue;
@@ -859,8 +859,8 @@ void CollisionManager::CheckPlayerVsEnemies()
 
             if (m_onPlayerHitCallback) m_onPlayerHitCallback();
 
-            if (m_itemManager && enemy->GetType() == EnemyType::Paddle) {
-                m_itemManager->SpawnHealAt(enemyPos);
+            if (m_itemManager && (enemy->GetType() == EnemyType::Paddle || enemy->GetType() == EnemyType::Pentagon)) {
+                m_itemManager->SpawnHealClusterAt(enemyPos, 3);
             }
             it = enemies.erase(it);
 

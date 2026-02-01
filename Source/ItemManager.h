@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <memory>
+#include <unordered_map>
 #include "Item.h"
 #include "System/Graphics.h"
 #include "System/ShapeRenderer.h"
@@ -145,6 +146,13 @@ public:
     void ResetAllAnimations();
     void SpawnItem(const ItemSpawnData& data);
     void SpawnHealAt(const DirectX::XMFLOAT3& position);
+    void SpawnHealClusterAt(const DirectX::XMFLOAT3& position, int count = 3);
+
+    // Tracking: item heal mendekat ke player setiap frame
+    void SetTrackTarget(const DirectX::XMFLOAT3& target) { m_trackTarget = target; m_trackingEnabled = true; }
+
+    // Cluster map: key = item index di m_items, value = cluster ID
+    const std::unordered_map<int, int>& GetClusterMap() const { return m_itemClusterMap; }
 
     std::vector<std::unique_ptr<Item>>& GetItems() { return m_items; }
 
@@ -155,5 +163,13 @@ public:
 private:
     std::vector<std::unique_ptr<Item>> m_items;
     ID3D11Device* m_deviceRef = nullptr;
+    // Tracking state
+    bool m_trackingEnabled = false;
+    DirectX::XMFLOAT3 m_trackTarget = { 0.0f, 0.0f, 0.0f };
+
+    // Cluster tracking (parallel to m_items)
+    int m_nextClusterId = 0;
+    std::unordered_map<int, int> m_itemClusterMap; // itemIndex -> clusterId
+
     int m_debugHighlightIndex = -1;
 };

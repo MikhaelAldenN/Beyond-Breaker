@@ -96,13 +96,13 @@ SceneGameBeyond::SceneGameBeyond()
     m_collisionManager = std::make_unique<CollisionManager>();
 
     // [UPDATE] Tambahkan m_boss.get() di parameter terakhir
-    // Note: m_itemManager.get() = nullptr sekarang, tapi collision manager bisa handle
+    // CollisionManager butuh ItemManager pointer buat SpawnHealClusterAt
     m_collisionManager->Initialize(
         m_player.get(),
         nullptr,             // Stage null
         m_blockManager.get(),
         m_enemyManager.get(),
-        nullptr,             //  m_itemManager.get() -> nullptr
+        m_itemManager.get(),  // ItemManager pointer buat item drop
         m_boss.get()
     );
 
@@ -396,39 +396,90 @@ void SceneGameBeyond::UpdateItemWindows()
     if (!m_itemManager || !m_windowSystem) return;
 
     const auto& items = m_itemManager->GetItems();
+    const auto& clusterMap = m_itemManager->GetClusterMap();
 
-    for (size_t i = 0; i < items.size(); ++i)
+    // =========================================================
+    // STEP 1: Bangun set dari cluster ID yang MASIH punya item aktif
+    // =========================================================
+    std::unordered_set<int> activeClusters;
+
+    for (const auto& [itemIdx, cid] : clusterMap)
     {
-        // Buat ID unik berdasarkan index
-        std::string winID = "item_view_" + std::to_string(i);
-        auto& item = items[i];
-
-        // Cek apakah window untuk item ini sudah ada?
-        bool isWindowExists = (m_windowSystem->GetTrackedWindow(winID) != nullptr);
-
-        // KONDISI 1: Item Aktif & Window Belum Ada -> SPAWN WINDOW
-        if (item->IsActive() && !isWindowExists)
+        if (itemIdx < (int)items.size() && items[itemIdx] && items[itemIdx]->IsActive())
         {
-            m_windowSystem->AddTrackedWindow(
-                { winID, "ITEM", 120, 120, 1, { 0.0f, 0.5f, 0.0f } }, // Priority 1 (di atas background)
-
-                // Posisi: Ikuti Item
-                [this, i]() -> DirectX::XMFLOAT3 {
-                    if (m_itemManager && i < m_itemManager->GetItems().size())
-                        return m_itemManager->GetItems()[i]->GetPosition();
-                    return { 0, 0, 0 };
-                },
-
-                // Ukuran: Tetap
-                []() -> DirectX::XMFLOAT2 { return { 120, 120 }; }
-            );
+            activeClusters.insert(cid);
         }
-        // KONDISI 2: Item Sudah Diambil (Mati) & Window Masih Ada -> DESTROY WINDOW
-        else if (!item->IsActive() && isWindowExists)
-        {
-            // Ini akan memanggil fungsi yang baru kita buat tadi
-            m_windowSystem->RemoveTrackedWindow(winID);
+    }
+
+    // =========================================================
+    // STEP 2: Spawn window untuk cluster baru yang belum punya window
+    // =========================================================
+    for (int cid : activeClusters)
+    {
+        std::string winID = "item_cluster_" + std::to_string(cid);
+
+        if (m_windowSystem->GetTrackedWindow(winID) != nullptr) continue; // Sudah ada
+
+        int capturedCid = cid;
+
+        m_windowSystem->AddTrackedWindow(
+            { winID, "ITEM", 150, 150, 1, { 0.0f, 0.0f, 0.0f } },
+
+            // === POSISI: Centroid dari semua item aktif di cluster ini ===
+            [this, capturedCid]() -> DirectX::XMFLOAT3 {
+                if (!m_itemManager) return { 0, 0, 0 };
+
+                const auto& items = m_itemManager->GetItems();
+                const auto& clusterMap = m_itemManager->GetClusterMap();
+
+                float sumX = 0, sumZ = 0;
+                int   count = 0;
+
+                for (const auto& [idx, cid] : clusterMap)
+                {
+                    if (cid != capturedCid) continue;
+                    if (idx >= (int)items.size() || !items[idx] || !items[idx]->IsActive()) continue;
+
+                    auto pos = items[idx]->GetPosition();
+                    sumX += pos.x;
+                    sumZ += pos.z;
+                    count++;
+                }
+
+                if (count == 0) return { 0, -1000, 0 }; // Semua item sudah diambil
+
+                return { sumX / count, 0.0f, sumZ / count };
+            },
+
+            // === UKURAN: Tetap ===
+            []() -> DirectX::XMFLOAT2 { return { 150, 150 }; }
+        );
+    }
+
+    // =========================================================
+    // STEP 3: Cleanup — hapus window dari cluster yang sudah habis
+    // =========================================================
+    std::vector<std::string> toRemove;
+    const auto& windows = m_windowSystem->GetWindows();
+
+    for (const auto& win : windows)
+    {
+        if (win->name.find("item_cluster_") != 0) continue;
+
+        try {
+            int cid = std::stoi(win->name.substr(13)); // "item_cluster_" = 13 char
+
+            if (activeClusters.find(cid) == activeClusters.end())
+            {
+                toRemove.push_back(win->name);
+            }
         }
+        catch (...) {}
+    }
+
+    for (const auto& name : toRemove)
+    {
+        m_windowSystem->RemoveTrackedWindow(name);
     }
 }
 
@@ -573,7 +624,7 @@ void SceneGameBeyond::Update(float elapsedTime)
         // Enemy butuh Camera active dan Posisi Player untuk tracking
         Camera* activeCam = CameraController::Instance().GetActiveCamera().get();
         m_enemyManager->Update(elapsedTime, activeCam, m_player->GetPosition());
-    
+
         UpdateEnemyWindows();
     }
 
@@ -633,8 +684,9 @@ void SceneGameBeyond::Update(float elapsedTime)
     HandleDebugInput();
     CameraController::Instance().Update(elapsedTime);
 
-    if (m_itemManager)
+    if (m_itemManager && m_player)
     {
+        m_itemManager->SetTrackTarget(m_player->GetPosition());
         m_itemManager->Update(elapsedTime, activeCam);
     }
 

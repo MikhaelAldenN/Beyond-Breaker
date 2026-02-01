@@ -9,11 +9,15 @@
 
 void WindowManager::Update(float dt)
 {
-    // [OPTIMISASI 1] Hanya update Z-Order jika ditandai 'dirty'
-    if (m_dirtyPriority)
+    static float priorityTimer = 0.0f;
+    priorityTimer += dt;
+
+    // HANYA enforce priority setiap 0.5 detik, bukan setiap frame!
+    if (m_dirtyPriority && priorityTimer >= 0.5f)
     {
         EnforceWindowPriorities();
         m_dirtyPriority = false;
+        priorityTimer = 0.0f;
     }
 }
 
