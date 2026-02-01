@@ -57,10 +57,4 @@ private:
     // Jika tidak berubah, skip SetWindowPos
     // =========================================================
     std::vector<GameWindow*> m_lastSortedOrder;
-
-    // =========================================================
-    // [FIX CRITICAL] Throttle timer untuk priority enforcement
-    // Prevent blocking calls setiap frame
-    // =========================================================
-    float m_priorityThrottleTimer = 0.0f;
 };
