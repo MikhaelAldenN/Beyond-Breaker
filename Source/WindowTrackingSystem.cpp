@@ -6,6 +6,27 @@
 
 using namespace DirectX;
 
+// =========================================================
+// [NEW] STREAMING DETECTION
+// =========================================================
+static bool IsStreamingActive()
+{
+    static bool cached = false;
+    static float cacheTimer = 0.0f;
+    static bool result = false;
+
+    if (!cached || cacheTimer > 5.0f)
+    {
+        HWND discordWnd = FindWindowA("Discord", nullptr);
+        HWND obsWnd = FindWindowA("OBSWindowClass", nullptr);
+        result = (discordWnd != nullptr) || (obsWnd != nullptr);
+        cached = true;
+        cacheTimer = 0.0f;
+    }
+
+    return result;
+}
+
 WindowTrackingSystem::WindowTrackingSystem()
 {
 }
@@ -108,16 +129,26 @@ void WindowTrackingSystem::Update(float dt)
     }
 
     // =========================================================
-    // [OPTIMISASI 2] Update HANYA window yang visible
-    // Jangan update window yang hidden/inactive
+    // [FIX DISCORD] BATCH UPDATES
+    // Update max 5 windows per frame saat streaming untuk prevent hang
     // =========================================================
+    bool isStreaming = IsStreamingActive();
+    int maxUpdatesPerFrame = isStreaming ? 5 : 999;
+    int updatedCount = 0;
+
     for (auto& tracked : m_trackedWindows)
     {
-        // Early skip jika window tidak visible
         if (!tracked->window || !tracked->window->IsVisible())
             continue;
 
+        // =========================================================
+        // [FIX DISCORD] SKIP EXCESS UPDATES
+        // =========================================================
+        if (updatedCount >= maxUpdatesPerFrame)
+            break;
+
         UpdateSingleWindow(dt, *tracked);
+        updatedCount++;
     }
 }
 
@@ -127,8 +158,15 @@ void WindowTrackingSystem::UpdateSingleWindow(float dt, TrackedWindow& tracked)
         return;
 
     // =========================================================
-    // [OPTIMISASI 3] SKIP SIZE UPDATE jika callback NULL
-    // Hemat computational cost untuk window yang size-nya fixed
+    // [FIX DISCORD] ADAPTIVE THRESHOLDS
+    // Lebih agresif saat streaming untuk reduce update frequency
+    // =========================================================
+    bool isStreaming = IsStreamingActive();
+    int posThreshold = isStreaming ? 10 : 5;  // 10px saat streaming
+    int sizeThreshold = isStreaming ? 10 : 5; // 10px saat streaming
+
+    // =========================================================
+    // SIZE UPDATE
     // =========================================================
     if (tracked.getTargetSizeFunc)
     {
@@ -144,11 +182,7 @@ void WindowTrackingSystem::UpdateSingleWindow(float dt, TrackedWindow& tracked)
         int deltaW = abs(newW - tracked.state.actualW);
         int deltaH = abs(newH - tracked.state.actualH);
 
-        // =========================================================
-        // [OPTIMISASI 4] THRESHOLD AGRESIF
-        // Dari 2px jadi 3px supaya SetWindowSize jarang dipanggil
-        // =========================================================
-        if (deltaW >= 3 || deltaH >= 3)
+        if (deltaW >= sizeThreshold || deltaH >= sizeThreshold)
         {
             newW = max(10, newW);
             newH = max(10, newH);
@@ -160,7 +194,7 @@ void WindowTrackingSystem::UpdateSingleWindow(float dt, TrackedWindow& tracked)
     }
 
     // =========================================================
-    // STEP 2: UPDATE POSITION
+    // POSITION UPDATE
     // =========================================================
     XMFLOAT3 targetWorldPos = tracked.getTargetPositionFunc();
     targetWorldPos.x += tracked.trackingOffset.x;
@@ -183,17 +217,23 @@ void WindowTrackingSystem::UpdateSingleWindow(float dt, TrackedWindow& tracked)
     int deltaX = abs(newX - tracked.state.actualX);
     int deltaY = abs(newY - tracked.state.actualY);
 
-    // =========================================================
-    // [OPTIMISASI 4] THRESHOLD AGRESIF untuk Position juga
-    // =========================================================
-    if (deltaX >= 3 || deltaY >= 3)
+    if (deltaX >= posThreshold || deltaY >= posThreshold)
     {
         SDL_SetWindowPosition(tracked.window->GetSDLWindow(), newX, newY);
         tracked.state.actualX = newX;
         tracked.state.actualY = newY;
+
+        // =========================================================
+        // [FIX DISCORD] YIELD setelah SetWindowPosition
+        // Prevent tight loop yang bikin hang
+        // =========================================================
+        if (isStreaming)
+        {
+            Sleep(0); // Yield CPU timeslice
+        }
     }
 
-    // D. Update Camera Projection
+    // Update Camera Projection
     UpdateOffCenterProjection(tracked.camera.get(), tracked.window, GetUnifiedCameraHeight());
 }
 
