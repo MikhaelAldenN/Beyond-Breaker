@@ -4,7 +4,6 @@
 #include <memory>
 #include <algorithm>
 #include <windows.h>
-#include <mutex>
 #include "GameWindow.h"
 
 class Scene;
@@ -50,17 +49,12 @@ private:
     GameWindow* debugWindow = nullptr;
 
     bool m_dirtyPriority = false;
-    mutable std::mutex m_windowsMutex;
 
     // =========================================================
-    // [OPTIMISASI] Cache untuk sorted order
-    // Jika tidak berubah, skip SetWindowPos
+    // [FIX] Cache untuk sorted order  sekarang disimpan AFTER sort
     // =========================================================
     std::vector<GameWindow*> m_lastSortedOrder;
 
-    // =========================================================
-    // [FIX CRITICAL] Throttle timer untuk priority enforcement
-    // Prevent blocking calls setiap frame
-    // =========================================================
+    // Throttle timer untuk priority enforcement
     float m_priorityThrottleTimer = 0.0f;
 };
