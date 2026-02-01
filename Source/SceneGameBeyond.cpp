@@ -804,11 +804,94 @@ void SceneGameBeyond::DrawTabObjects()
     }
 
     // --- 2. BOSS ---
+// --- 2. BOSS ---
     if (m_boss)
     {
         if (ImGui::TreeNode("Boss Controller"))
         {
-            m_boss->DrawDebugGUI(); // Delegasi ke fungsi internal Boss
+            // [BARU] MONITOR1 DEBUG SECTION
+            ImGui::Separator();
+            ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.0f, 1.0f), "MONITOR1 DEBUG");
+
+            ImGui::Text("HP: %d / 5", m_boss->m_monitor1Health);
+            ImGui::Text("Destroyed: %s", m_boss->m_monitor1Destroyed ? "YES" : "NO");
+
+            // Row 1: Damage buttons
+            if (ImGui::Button("DAMAGE (-1 HP)", ImVec2(ImGui::GetContentRegionAvail().x * 0.48f, 40)))
+            {
+                if (!m_boss->m_monitor1Destroyed && m_boss->m_monitor1Health > 0)
+                {
+                    m_boss->m_monitor1Health--;
+                    std::string msg = "MANUAL_DAMAGE: " + std::to_string(m_boss->m_monitor1Health) + " HP";
+                    m_boss->AddTerminalLog(msg);
+                    OutputDebugStringA(("MANUAL DAMAGE! HP: " + std::to_string(m_boss->m_monitor1Health) + "\n").c_str());
+
+                    if (m_boss->m_monitor1Health <= 0)
+                    {
+                        m_boss->m_monitor1Destroyed = true;
+                        BossPart* monitor1 = m_boss->GetPart("monitor1");
+                        if (monitor1)
+                        {
+                            monitor1->useFloating = false;
+                            monitor1->position = { -500.0f, -500.0f, -500.0f };
+                        }
+                        m_boss->AddTerminalLog("MONITOR1_DESTROYED !!!CRITICAL!!!");
+                    }
+                }
+            }
+
+            ImGui::SameLine();
+
+            if (ImGui::Button("DESTROY", ImVec2(ImGui::GetContentRegionAvail().x, 40)))
+            {
+                m_boss->m_monitor1Health = 0;
+                m_boss->m_monitor1Destroyed = true;
+                BossPart* monitor1 = m_boss->GetPart("monitor1");
+                if (monitor1)
+                {
+                    monitor1->useFloating = false;
+                    monitor1->position = { -500.0f, -500.0f, -500.0f };
+                }
+                m_boss->AddTerminalLog("MONITOR1_DESTROYED VIA CONSOLE");
+                OutputDebugStringA("MONITOR1 DESTROYED VIA CONSOLE!\n");
+            }
+
+            ImGui::Separator();
+
+            // Row 2: Heal/Reset buttons
+            if (ImGui::Button("RESET HP", ImVec2(ImGui::GetContentRegionAvail().x * 0.48f, 30)))
+            {
+                m_boss->m_monitor1Health = 5;
+                m_boss->m_monitor1Destroyed = false;
+                BossPart* monitor1 = m_boss->GetPart("monitor1");
+                if (monitor1)
+                {
+                    monitor1->useFloating = true;
+                    monitor1->position = { 0.f, 0.6f, 6.5f }; // Original position
+                }
+                m_boss->AddTerminalLog("MONITOR1_RESET");
+                OutputDebugStringA("MONITOR1 RESET!\n");
+            }
+
+            ImGui::SameLine();
+
+            if (ImGui::Button("TEST COLLISION", ImVec2(ImGui::GetContentRegionAvail().x, 30)))
+            {
+                // Move player ke monitor1 untuk test
+                BossPart* monitor1 = m_boss->GetPart("monitor1");
+                if (m_player && monitor1)
+                {
+                    DirectX::XMFLOAT3 testPos = monitor1->visualPosition;
+                    testPos.z += 1.0f; // Geser sedikit biar collision terdeteksi
+                    m_player->SetPosition(testPos.x, testPos.y, testPos.z);
+                    OutputDebugStringA("PLAYER TELEPORTED TO MONITOR1 FOR TESTING!\n");
+                }
+            }
+
+            ImGui::Separator();
+
+            // Existing Boss Debug GUI
+            m_boss->DrawDebugGUI();
             ImGui::TreePop();
         }
     }

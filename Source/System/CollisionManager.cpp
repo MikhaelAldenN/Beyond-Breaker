@@ -162,7 +162,6 @@ void CollisionManager::Update(float elapsedTime)
         m_player->GetMovement()->SetGravityEnabled(false);
         m_player->GetMovement()->SetVelocityY(0.0f);
     }
-
     else
     {
         float currentY = m_player->GetMovement()->GetPosition().y;
@@ -192,6 +191,12 @@ void CollisionManager::Update(float elapsedTime)
         }
     }
 
+    // [BARU] Update Monitor1 hit cooldown
+    if (m_monitor1HitCooldown > 0.0f)
+    {
+        m_monitor1HitCooldown -= elapsedTime;
+    }
+
     if (m_player->GetGameStage() != 3) return;
 
     CheckEnemyProjectilesFull(elapsedTime);
@@ -215,6 +220,10 @@ void CollisionManager::Update(float elapsedTime)
         CheckPlayerVsBlocks();
         CheckBlockVsEnemies();
         CheckBossFilesVsBlocks();
+
+        // Monitor1 Collision Checks
+        CheckBossMonitor1VsBlocks();
+        CheckBossMonitor1VsBlockProjectiles();
     }
 
     if (m_itemManager)
@@ -222,6 +231,9 @@ void CollisionManager::Update(float elapsedTime)
         CheckPlayerVsItems();
         CheckBlockVsItems();
     }
+
+    // Monitor1 vs Player check
+    CheckBossMonitor1VsPlayer();
 }
 
 void CollisionManager::CheckEnemyProjectilesFull(float elapsedTime)
@@ -1160,6 +1172,197 @@ void CollisionManager::CheckBossFilesVsBlocks()
                 // File sudah mati, break loop nearbyIndices agar tidak menghancurkan 2 block sekaligus
                 break;
             }
+        }
+    }
+}
+
+// =========================================================
+// [UPDATE] CHECK BOSS MONITOR1 VS PLAYER
+// =========================================================
+void CollisionManager::CheckBossMonitor1VsPlayer()
+{
+    if (!m_boss || !m_player) return;
+
+    BossPart* monitor1 = m_boss->GetPart("monitor1");
+    if (!monitor1) return;
+
+    if (m_boss->m_monitor1Destroyed) return;
+
+    DirectX::XMFLOAT3 monitorPos = monitor1->visualPosition;
+    DirectX::XMFLOAT3 monitorHurtbox = { 3.0f, 3.0f, 3.0f };
+
+    DirectX::XMFLOAT3 playerPos = m_player->GetMovement()->GetPosition();
+    float playerRadius = 0.8f;
+
+    DirectX::XMFLOAT3 closestPoint = playerPos;
+    closestPoint.x = (std::max)(monitorPos.x - monitorHurtbox.x, (std::min)(playerPos.x, monitorPos.x + monitorHurtbox.x));
+    closestPoint.y = (std::max)(monitorPos.y - monitorHurtbox.y, (std::min)(playerPos.y, monitorPos.y + monitorHurtbox.y));
+    closestPoint.z = (std::max)(monitorPos.z - monitorHurtbox.z, (std::min)(playerPos.z, monitorPos.z + monitorHurtbox.z));
+
+    float dx = playerPos.x - closestPoint.x;
+    float dy = playerPos.y - closestPoint.y;
+    float dz = playerPos.z - closestPoint.z;
+    float distSq = dx * dx + dy * dy + dz * dz;
+
+    if (distSq < (playerRadius * playerRadius))
+    {
+        // [BARU] Check cooldown sebelum apply damage
+        if (m_monitor1HitCooldown <= 0.0f)
+        {
+            m_boss->m_monitor1Health--;
+            m_monitor1HitCooldown = MONITOR1_HIT_COOLDOWN;  // Reset cooldown
+
+            std::string msg = "MONITOR1_HIT: " + std::to_string(m_boss->m_monitor1Health) + " HP REMAINING";
+            m_boss->AddTerminalLog(msg);
+            OutputDebugStringA(("Player hit Monitor1! HP: " + std::to_string(m_boss->m_monitor1Health) + "\n").c_str());
+
+            if (m_boss->m_monitor1Health <= 0)
+            {
+                m_boss->AddTerminalLog("MONITOR1_DESTROYED !!!CRITICAL SYSTEM FAILURE!!!");
+                OutputDebugStringA("!!! MONITOR1 DESTROYED !!!\n");
+
+                m_boss->m_monitor1Destroyed = true;
+
+                if (monitor1)
+                {
+                    monitor1->useFloating = false;
+                    monitor1->position = { -500.0f, -500.0f, -500.0f };
+                }
+            }
+        }
+    }
+}
+
+// =========================================================
+// [UPDATE] CHECK BOSS MONITOR1 VS BLOCKS
+// =========================================================
+void CollisionManager::CheckBossMonitor1VsBlocks()
+{
+    if (!m_boss || !m_blockManager) return;
+
+    BossPart* monitor1 = m_boss->GetPart("monitor1");
+    if (!monitor1) return;
+
+    if (m_boss->m_monitor1Destroyed) return;
+
+    DirectX::XMFLOAT3 monitorPos = monitor1->visualPosition;
+    DirectX::XMFLOAT3 monitorHurtbox = { 3.0f, 3.0f, 3.0f };
+
+    auto& blocks = m_blockManager->GetBlocks();
+    for (auto& blockPtr : blocks)
+    {
+        if (!blockPtr || !blockPtr->IsActive() || blockPtr->IsFilling()) continue;
+
+        DirectX::XMFLOAT3 blockPos = blockPtr->GetMovement()->GetPosition();
+        float blockRadius = 0.6f;
+
+        DirectX::XMFLOAT3 closestPoint = blockPos;
+        closestPoint.x = (std::max)(monitorPos.x - monitorHurtbox.x, (std::min)(blockPos.x, monitorPos.x + monitorHurtbox.x));
+        closestPoint.y = (std::max)(monitorPos.y - monitorHurtbox.y, (std::min)(blockPos.y, monitorPos.y + monitorHurtbox.y));
+        closestPoint.z = (std::max)(monitorPos.z - monitorHurtbox.z, (std::min)(blockPos.z, monitorPos.z + monitorHurtbox.z));
+
+        float dx = blockPos.x - closestPoint.x;
+        float dy = blockPos.y - closestPoint.y;
+        float dz = blockPos.z - closestPoint.z;
+        float distSq = dx * dx + dy * dy + dz * dz;
+
+        if (distSq < (blockRadius * blockRadius))
+        {
+            // [BARU] Check cooldown
+            if (m_monitor1HitCooldown <= 0.0f)
+            {
+                m_boss->m_monitor1Health--;
+                m_monitor1HitCooldown = MONITOR1_HIT_COOLDOWN;
+
+                std::string attackType = blockPtr->IsProjectile() ? "PROJECTILE" : "DIRECT";
+                std::string msg = "MONITOR1_HIT_BY_" + attackType + ": " + std::to_string(m_boss->m_monitor1Health) + " HP";
+                m_boss->AddTerminalLog(msg);
+                OutputDebugStringA(("Block (" + attackType + ") hit Monitor1! HP: " + std::to_string(m_boss->m_monitor1Health) + "\n").c_str());
+
+                blockPtr->OnHit();
+                blockPtr->SetActive(false);
+                if (m_blockManager) m_blockManager->TriggerBlockBreakParams();
+
+                if (m_boss->m_monitor1Health <= 0)
+                {
+                    m_boss->AddTerminalLog("MONITOR1_DESTROYED !!!CRITICAL SYSTEM FAILURE!!!");
+                    OutputDebugStringA("!!! MONITOR1 DESTROYED !!!\n");
+
+                    m_boss->m_monitor1Destroyed = true;
+
+                    if (monitor1)
+                    {
+                        monitor1->useFloating = false;
+                        monitor1->position = { -500.0f, -500.0f, -500.0f };
+                    }
+                }
+            }
+
+            break;
+        }
+    }
+}
+
+// =========================================================
+// [UPDATE] CHECK BOSS MONITOR1 VS BLOCK PROJECTILES
+// =========================================================
+void CollisionManager::CheckBossMonitor1VsBlockProjectiles()
+{
+    if (!m_boss || !m_blockManager) return;
+
+    BossPart* monitor1 = m_boss->GetPart("monitor1");
+    if (!monitor1 || m_boss->m_monitor1Destroyed) return;
+
+    DirectX::XMFLOAT3 monitorPos = monitor1->visualPosition;
+    DirectX::XMFLOAT3 monitorHurtbox = { 3.0f, 3.0f, 3.0f };
+
+    auto& blocks = m_blockManager->GetBlocks();
+    for (auto& blockPtr : blocks)
+    {
+        if (!blockPtr || !blockPtr->IsActive() || !blockPtr->IsProjectile()) continue;
+
+        DirectX::XMFLOAT3 blockPos = blockPtr->GetMovement()->GetPosition();
+        float blockRadius = 0.6f;
+
+        DirectX::XMFLOAT3 closestPoint = blockPos;
+        closestPoint.x = (std::max)(monitorPos.x - monitorHurtbox.x, (std::min)(blockPos.x, monitorPos.x + monitorHurtbox.x));
+        closestPoint.y = (std::max)(monitorPos.y - monitorHurtbox.y, (std::min)(blockPos.y, monitorPos.y + monitorHurtbox.y));
+        closestPoint.z = (std::max)(monitorPos.z - monitorHurtbox.z, (std::min)(blockPos.z, monitorPos.z + monitorHurtbox.z));
+
+        float dx = blockPos.x - closestPoint.x;
+        float dy = blockPos.y - closestPoint.y;
+        float dz = blockPos.z - closestPoint.z;
+        float distSq = dx * dx + dy * dy + dz * dz;
+
+        if (distSq < (blockRadius * blockRadius))
+        {
+            // [BARU] Check cooldown
+            if (m_monitor1HitCooldown <= 0.0f)
+            {
+                m_boss->m_monitor1Health--;
+                m_monitor1HitCooldown = MONITOR1_HIT_COOLDOWN;
+
+                std::string msg = "MONITOR1_HIT_BY_PROJECTILE: " + std::to_string(m_boss->m_monitor1Health) + " HP";
+                m_boss->AddTerminalLog(msg);
+                OutputDebugStringA(("Block PROJECTILE hit Monitor1! HP: " + std::to_string(m_boss->m_monitor1Health) + "\n").c_str());
+
+                blockPtr->SetActive(false);
+                if (m_blockManager) m_blockManager->TriggerBlockBreakParams();
+
+                if (m_boss->m_monitor1Health <= 0)
+                {
+                    m_boss->AddTerminalLog("MONITOR1_DESTROYED !!!CRITICAL SYSTEM FAILURE!!!");
+                    m_boss->m_monitor1Destroyed = true;
+
+                    if (monitor1)
+                    {
+                        monitor1->useFloating = false;
+                        monitor1->position = { -500.0f, -500.0f, -500.0f };
+                    }
+                }
+            }
+
+            break;
         }
     }
 }

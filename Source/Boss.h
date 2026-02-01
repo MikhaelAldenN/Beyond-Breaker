@@ -206,6 +206,8 @@ public:
 
     bool IsConcurrentSpawnEligibleState() const;
 
+    int m_monitor1Health = 5;
+    bool m_monitor1Destroyed = false;
 
 private:
     void InitializeParts();

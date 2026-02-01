@@ -81,6 +81,9 @@ Boss::Boss()
 
     m_fileProjectiles.reserve(100);
     m_stateMachine.Initialize(new BossIntroState(), this);
+
+    m_monitor1Health = 5;
+    m_monitor1Destroyed = false;
 }
 
 Boss::~Boss() {}

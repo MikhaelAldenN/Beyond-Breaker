@@ -51,6 +51,10 @@ private:
     void CheckBossFilesVsPlayer();
     void CheckBossFilesVsBlocks();
 
+    void CheckBossMonitor1VsPlayer();
+    void CheckBossMonitor1VsBlocks();
+    void CheckBossMonitor1VsBlockProjectiles();
+
     Player* m_player = nullptr;
     Stage* m_stage = nullptr;
     Boss* m_boss = nullptr; // [BARU]
@@ -63,4 +67,7 @@ private:
     std::function<void()> m_onPlayerDeathCallback;
     std::function<void()> m_onPlayerHitCallback = nullptr;
     std::function<void(DirectX::XMFLOAT3)> m_onCheckpointReachCallback;
+
+    float m_monitor1HitCooldown = 0.0f;
+    static constexpr float MONITOR1_HIT_COOLDOWN = 0.3f;  // 300ms cooldown
 };
